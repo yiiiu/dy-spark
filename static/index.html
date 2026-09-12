@@ -149,8 +149,25 @@
       border-radius: var(--radius-sm);
       padding: 12px 14px;
     }
-    .metric-label { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
-    .metric-val { font-size: 20px; font-weight: 700; color: var(--text-main); }
+    .metric-val { font-size: 20px; font-weight: 700; color: var(--text-main); display: flex; align-items: center; }
+    .spark-metric-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: #FEF2F2;
+      color: #DC2626;
+      border: 1px solid #FEE2E2;
+      font-size: 12px;
+      font-weight: 700;
+      padding: 1px 7px;
+      border-radius: 12px;
+      margin-left: 8px;
+    }
+    html.dark .spark-metric-badge {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #F87171;
+    }
 
     /* 倒计时看板 */
     .next-run-banner {
@@ -503,7 +520,13 @@
                   <svg class="lucide-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
                   续火花名单
                 </div>
-                <div class="metric-val">{{ config.friends?.length || 0 }} <span style="font-size:12px; color:#DC2626; font-weight:600;">🔥 {{ sparkFriendsCount }}</span></div>
+                <div class="metric-val">
+                  {{ config.friends?.length || 0 }}
+                  <span class="spark-metric-badge" :title="`当前发现 ${sparkFriendsCount} 位火花好友`">
+                    <svg class="icon-flame-badge" style="width:12px;height:12px;" viewBox="0 0 24 24"><path fill="url(#flameGrad)" d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" /></svg>
+                    {{ sparkFriendsCount }}
+                  </span>
+                </div>
               </div>
               <div class="metric-box">
                 <div class="metric-label">
