@@ -145,6 +145,21 @@
             <el-divider content-position="left">最近点赞</el-divider>
             <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
               <el-button :loading="likesFetching" @click="fetchLikedVideos">读取最近点赞（最多 20 条）</el-button>
+              <el-button
+                v-if="likedVideos.length"
+                type="primary"
+                :disabled="!selectedLikedVideos.length"
+                @click="addLikedVideos"
+              >
+                将勾选视频加入队列{{ selectedLikedVideos.length ? ` (${selectedLikedVideos.length})` : '' }}
+              </el-button>
+              <el-button
+                v-if="likedVideos.length"
+                size="small"
+                @click="toggleSelectAllLiked"
+              >
+                {{ selectedLikedVideos.length === likedVideos.length ? '清空勾选' : '全选点赞视频' }}
+              </el-button>
               <span v-if="likesAt" style="color:#909399; font-size:12px;">{{ fmt(likesAt) }}</span>
               <span v-if="likesError" style="color:#f56c6c; font-size:12px;">{{ likesError }}</span>
             </div>
@@ -155,7 +170,6 @@
                   <span style="display:block; color:#909399; font-size:12px; margin-top:2px;">{{ v.url }}</span>
                 </el-checkbox>
               </el-checkbox-group>
-              <el-button size="small" type="primary" style="margin-top:8px;" @click="addLikedVideos">将勾选视频加入队列</el-button>
             </div>
             <el-empty v-else description="暂无点赞视频，请先读取"></el-empty>
 
@@ -452,6 +466,13 @@
             ElementPlus.ElMessage.success(`已加入 ${additions.length} 条点赞视频`);
           } catch (e) { ElementPlus.ElMessage.error(e.response?.data?.detail || '加入失败'); }
         }
+        function toggleSelectAllLiked() {
+          if (selectedLikedVideos.value.length === likedVideos.value.length) {
+            selectedLikedVideos.value = [];
+          } else {
+            selectedLikedVideos.value = likedVideos.value.map((v) => v.id);
+          }
+        }
         async function removeVideo(id) {
           try {
             await saveVideoQueue(videoQueue.value.filter((v) => v.id !== id));
@@ -536,7 +557,7 @@
           tokenDialog, tokenInput,
           fmt, loadAll, loadLogs, loadContacts, fetchContacts, applySelection,
           saveFriends, saveSettings, triggerRun, saveVideoMode, addManualVideos, addLikedVideos,
-          removeVideo, fetchLikedVideos, triggerVideoRun,
+          toggleSelectAllLiked, removeVideo, fetchLikedVideos, triggerVideoRun,
           onFileChange, onFileRemove, uploadState, showTokenDialog, saveToken,
         };
       },
