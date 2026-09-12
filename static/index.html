@@ -130,61 +130,25 @@
     .app-container {
       max-width: 1440px;
       margin: 0 auto;
-      padding: 18px 24px 20px 24px;
-      min-height: calc(100vh - 53px);
-      display: flex;
-      flex-direction: column;
+      padding: 24px;
     }
     .main-grid {
       display: grid;
       grid-template-columns: 340px minmax(0, 1fr);
-      gap: 20px;
-      align-items: stretch;
-      flex: 1;
-      min-height: calc(100vh - 95px);
+      gap: 24px;
+      align-items: start;
     }
     .control-hub {
       min-width: 0;
-      display: flex;
-      flex-direction: column;
     }
     .control-hub .panel-card:last-child {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
       margin-bottom: 0;
-    }
-    .control-hub .panel-card:last-child .panel-body {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
     }
     .workspace {
       min-width: 0;
-      display: flex;
-      flex-direction: column;
-    }
-    .workspace > div:not(.workspace-tabs) {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-    }
-    .workspace > div:not(.workspace-tabs) > .panel-card,
-    .workspace > div:not(.workspace-tabs) > .terminal-window {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      margin-bottom: 0;
-    }
-    .workspace > div:not(.workspace-tabs) > .panel-card > .panel-body {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
-      justify-content: space-between;
     }
     @media (max-width: 1024px) {
-      .main-grid { grid-template-columns: 1fr; min-height: auto; }
+      .main-grid { grid-template-columns: 1fr; }
     }
 
     /* 卡片容器 */
@@ -393,26 +357,13 @@
       display: grid;
       grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
       gap: 20px;
-      align-items: stretch;
+      align-items: start;
     }
     .video-workspace-grid > div {
       min-width: 0;
-      display: flex;
-      flex-direction: column;
     }
-    .video-workspace-grid > div > .panel-card:last-child {
+    .video-workspace-grid .panel-card:last-child {
       margin-bottom: 0;
-    }
-    .video-workspace-grid > .panel-card {
-      height: 100%;
-      margin-bottom: 0;
-      display: flex;
-      flex-direction: column;
-    }
-    .video-workspace-grid > .panel-card > .panel-body {
-      flex: 1;
-      display: flex;
-      flex-direction: column;
     }
     @media (max-width: 1024px) {
       .video-workspace-grid { grid-template-columns: 1fr; }
@@ -457,9 +408,7 @@
     .t-dot-green { background: #10B981; }
     .terminal-body {
       padding: 16px;
-      flex: 1;
-      height: auto;
-      min-height: 480px;
+      height: 480px;
       overflow-y: auto;
       font-family: var(--font-mono);
       font-size: 12px;
