@@ -213,16 +213,6 @@ certbot --nginx -d douyin.example.com --non-interactive --agree-tos \
 
 ---
 
-## 致谢
-
-自动化流程与思路借鉴了以下开源项目（MIT 协议或公开教程）：
-
-- [douyin-cloud-streak](https://github.com/Yuriz132/douyin-cloud-streak)
-- [DouYinSparkFlow](https://github.com/2061360308/DouYinSparkFlow)
-- [TikTokAutoSparkWeb](https://github.com/DkoBot/TikTokAutoSparkWeb)
-
----
-
 ## License
 
 [MIT](./LICENSE)
