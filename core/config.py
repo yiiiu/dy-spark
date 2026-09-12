@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import hashlib
+import re
 import threading
 from pathlib import Path
 from urllib.parse import urlparse
@@ -97,6 +98,11 @@ def normalize_video_url(raw: object) -> str:
     value = str(raw or "").strip()
     if not value:
         return ""
+    # 支持从手机 App 分享口令/文案中提取 URL
+    m = re.search(r"https?://(?:[a-zA-Z0-9_-]+\.)?douyin\.com/[^\s，,。\"'<>]+", value)
+    if m:
+        value = m.group(0)
+    value = value.rstrip("，,。；;!！?？）)]}")
     try:
         parsed = urlparse(value)
     except Exception:

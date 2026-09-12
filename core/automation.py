@@ -189,7 +189,8 @@ def _wait_input_cleared(input_box, msg_text: str, wait: float = 8) -> bool:
     return False
 
 
-def send_to_contact(page, name: str, msg_text: str, dry_run: bool) -> tuple[bool, str]:
+def _prepare_conversation(page, name: str) -> tuple[bool, str, any]:
+    """切换并验证好友会话，确保聊天输入框就绪。返回 (ok, why, input_box)。"""
     switched = False
     for attempt in range(10):
         try:
@@ -222,18 +223,26 @@ def send_to_contact(page, name: str, msg_text: str, dry_run: bool) -> tuple[bool
 
     if not switched:
         _screenshot(page)
-        return False, "未能切换到该好友会话（名字不在聊天列表，或页面结构变化）"
+        return False, "未能切换到该好友会话（名字不在聊天列表，或页面结构变化）", None
 
     if detect_rate_limit(page):
-        return False, "检测到「操作频繁 / 安全验证」提示"
+        return False, "检测到「操作频繁 / 安全验证」提示", None
 
     input_box = page.locator('div[contenteditable="true"]').first
     try:
         if input_box.count() == 0 or input_box.bounding_box() is None:
-            return False, "找不到聊天输入框"
+            return False, "找不到聊天输入框", None
         input_box.wait_for(state="visible", timeout=8000)
     except Exception:
-        return False, "找不到聊天输入框"
+        return False, "找不到聊天输入框", None
+
+    return True, "", input_box
+
+
+def send_to_contact(page, name: str, msg_text: str, dry_run: bool) -> tuple[bool, str]:
+    ok, why, input_box = _prepare_conversation(page, name)
+    if not ok:
+        return False, why
 
     if dry_run:
         return True, "dry-run"
@@ -289,45 +298,12 @@ def _try_native_video_share(page, video_url: str) -> bool:
 
 def send_video_to_contact(page, name: str, video: dict, dry_run: bool) -> tuple[bool, str]:
     """Send one video to the active conversation, falling back to a URL message."""
+    ok, why, input_box = _prepare_conversation(page, name)
+    if not ok:
+        return False, why
+
     if dry_run:
         return True, "dry-run"
-
-    switched = False
-    for attempt in range(5):
-        try:
-            target = _find_contact(page, name)
-            if target.count():
-                target.click(force=True, timeout=10000)
-                time.sleep(random.uniform(2, 4))
-                if verify_in_conversation(page, name):
-                    switched = True
-                    break
-            else:
-                try:
-                    page.mouse.move(200, 350)
-                    page.mouse.wheel(0, 600)
-                except Exception:
-                    pass
-                time.sleep(1.5)
-        except Exception as e:
-            logger.info("点击联系人 %s 异常: %s", name, str(e)[:100])
-        time.sleep(random.uniform(1, 2))
-
-    if not switched and search_and_open(page, name):
-        time.sleep(random.uniform(1, 3))
-        switched = verify_in_conversation(page, name)
-    if not switched:
-        return False, "未能切换到该好友会话"
-    if detect_rate_limit(page):
-        return False, "检测到操作频繁/安全验证提示"
-
-    input_box = page.locator('div[contenteditable="true"]').first
-    try:
-        if input_box.count() == 0 or input_box.bounding_box() is None:
-            return False, "找不到聊天输入框"
-        input_box.wait_for(state="visible", timeout=8000)
-    except Exception:
-        return False, "找不到聊天输入框"
 
     if _try_native_video_share(page, video.get("url", "")):
         return True, "ok"
@@ -350,8 +326,21 @@ def fetch_liked_videos(limit: int = 20) -> dict:
     try:
         p = sync_playwright().start()
         try:
-            browser = p.chromium.launch(headless=True, args=["--no-sandbox", "--disable-setuid-sandbox", "--disable-dev-shm-usage", "--disable-gpu"])
-            context = browser.new_context(storage_state=str(STATE_PATH), viewport={"width": 1366, "height": 768})
+            browser = p.chromium.launch(
+                headless=True,
+                args=[
+                    "--no-sandbox",
+                    "--disable-setuid-sandbox",
+                    "--disable-dev-shm-usage",
+                    "--disable-gpu",
+                    "--disable-blink-features=AutomationControlled",
+                ],
+            )
+            context = browser.new_context(
+                storage_state=str(STATE_PATH),
+                viewport={"width": 1366, "height": 768},
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
+            )
             page = context.new_page()
             page.goto(LIKES_URL, timeout=90000, wait_until="domcontentloaded")
             page.wait_for_timeout(10000)
