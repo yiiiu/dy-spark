@@ -387,7 +387,7 @@ def fetch_liked_videos(limit: int = 20) -> dict:
 
 
 def fetch_chat_contacts() -> dict:
-    """从抖音私信页左侧聊天列表读取联系人（含火花天数），供网页端勾选。"""
+    """从抖音私信页左侧聊天列表完整读取所有联系人（含火花天数/重燃状态），火花好友自动置顶。"""
     result = {"at": _now(), "names": [], "error": None}
     if not STATE_PATH.exists():
         result["error"] = "尚未上传登录态 state.json"
@@ -404,11 +404,13 @@ def fetch_chat_contacts() -> dict:
                     "--disable-setuid-sandbox",
                     "--disable-dev-shm-usage",
                     "--disable-gpu",
+                    "--disable-blink-features=AutomationControlled",
                 ],
             )
             context = browser.new_context(
                 storage_state=str(STATE_PATH),
                 viewport={"width": 1366, "height": 768},
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
             )
             page = context.new_page()
 
@@ -425,63 +427,182 @@ def fetch_chat_contacts() -> dict:
                 result["error"] = "无法打开抖音私信页面"
                 return result
 
-            page.wait_for_timeout(10000)
+            page.wait_for_timeout(8000)
             logged, why = check_login(page)
             if not logged:
                 result["error"] = why
                 return result
 
+            # 等待联系人列表出现，未出现时尝试刷新页面重试
+            list_ready = False
+            for attempt in range(3):
+                try:
+                    page.wait_for_selector(".conversationConversationItemtitle", timeout=30000)
+                    list_ready = True
+                    break
+                except Exception:
+                    logger.info("第 %s 次等待联系人列表超时，刷新页面重试", attempt + 1)
+                    try:
+                        page.reload(wait_until="domcontentloaded", timeout=90000)
+                        page.wait_for_timeout(10000)
+                    except Exception:
+                        pass
+
+            if not list_ready:
+                result["error"] = "等待联系人列表超时（页面未正常渲染会话列表）"
+                return result
+
+            # 稍微等待首屏卡片渲染完全
+            page.wait_for_timeout(3000)
+
             extract_js = """
                 () => {
                     const out = [];
-                    const seen = new Set();
                     document.querySelectorAll('.conversationConversationItemtitle').forEach(t => {
                         const name = (t.textContent || '').trim();
-                        if (!name || seen.has(name)) return;
-                        seen.add(name);
+                        if (!name) return;
+
+                        let cur = t;
+                        for (let i = 0; i < 6; i++) {
+                            if (cur.parentElement && cur.parentElement.tagName !== 'BODY') {
+                                cur = cur.parentElement;
+                                if (cur.getAttribute('role') === 'listitem' || 
+                                    (cur.className && typeof cur.className === 'string' && 
+                                     (cur.className.includes('Item') || cur.className.includes('item')))) {
+                                    break;
+                                }
+                            }
+                        }
+
                         const wrap = t.parentElement;
+                        let streakText = '';
+                        let hasFlame = false;
+
+                        // 检查火焰图片
+                        const imgs = (cur || wrap).querySelectorAll('img');
+                        imgs.forEach(img => {
+                            if (img.src && (img.src.includes('flame') || img.src.includes('streak'))) {
+                                hasFlame = true;
+                            }
+                        });
+
+                        // 1. 标准 normalText 选择器
                         const s = wrap ? wrap.querySelector('.commonStreaknormalText') : null;
-                        out.push({ name: name, streak: s ? (s.textContent || '').trim() : '' });
+                        if (s && (s.textContent || '').trim()) {
+                            streakText = s.textContent.trim();
+                        } else if (cur) {
+                            // 2. 备选 streak 文本类名
+                            const altS = cur.querySelector('[class*="streak" i], [class*="Streak" i]');
+                            if (altS && (altS.textContent || '').trim()) {
+                                streakText = altS.textContent.trim();
+                            }
+                        }
+
+                        // 3. 卡片文本正则匹配重燃或临界消失提醒
+                        if (!streakText && cur) {
+                            const txt = cur.innerText || '';
+                            const m = txt.match(/重燃中\\s*\\d+\\/\\d+|\\d+\\s*天后消失/);
+                            if (m) {
+                                streakText = m[0].trim();
+                            }
+                        }
+
+                        // 4. 有火焰图片但未提取到具体文本时兜底
+                        if (!streakText && hasFlame) {
+                            streakText = '待续火花';
+                        }
+
+                        out.push({
+                            name: name,
+                            streak: streakText,
+                            has_spark: Boolean(streakText || hasFlame)
+                        });
                     });
                     return out;
                 }
             """
 
-            collected: list[dict] = []
-            for attempt in range(3):
-                try:
-                    page.wait_for_selector(".conversationConversationItemtitle", timeout=45000)
-                except Exception:
-                    logger.info("第 %s 次等待联系人列表超时", attempt + 1)
+            contacts_map: dict[str, dict] = {}
+            consecutive_no_new = 0
+            max_scrolls = 100
 
-                stable = 0
-                for _ in range(20):
-                    data = page.evaluate(extract_js) or []
-                    new_items = [x for x in data if x not in collected]
-                    if new_items:
-                        collected.extend(new_items)
-                        stable = 0
+            for scroll_idx in range(max_scrolls):
+                data = page.evaluate(extract_js) or []
+                new_items_count = 0
+
+                for item in data:
+                    name = item["name"]
+                    if name not in contacts_map:
+                        contacts_map[name] = item
+                        new_items_count += 1
                     else:
-                        stable += 1
-                        if stable >= 2:
-                            break
-                    try:
-                        page.mouse.move(200, 350)
-                        page.mouse.wheel(0, 800)
-                    except Exception:
-                        pass
-                    page.wait_for_timeout(1200)
+                        # 若已有此联系人但原先 streak 为空、新抓到了火花，及时更新补全
+                        if not contacts_map[name].get("streak") and item.get("streak"):
+                            contacts_map[name]["streak"] = item["streak"]
+                            contacts_map[name]["has_spark"] = True
+                        elif not contacts_map[name].get("has_spark") and item.get("has_spark"):
+                            contacts_map[name]["has_spark"] = True
 
-                if collected:
-                    break
+                if new_items_count > 0:
+                    consecutive_no_new = 0
+                else:
+                    consecutive_no_new += 1
+                    # 连续 10 次未发现新联系人，判定已真正滚动至底部
+                    if consecutive_no_new >= 10:
+                        break
+
+                # 驱动列表滚动：鼠标滚轮
                 try:
-                    page.reload(wait_until="domcontentloaded", timeout=90000)
-                    page.wait_for_timeout(12000)
+                    page.mouse.move(200, 350)
+                    page.mouse.wheel(0, 1000)
                 except Exception:
                     pass
 
-            result["names"] = collected
-            logger.info("已读取聊天列表联系人 %s 个", len(result["names"]))
+                # 若出现连续没有新增，借助 scrollIntoView 与容器 wheel 事件双重兜底触发虚拟列表加载
+                if consecutive_no_new >= 2:
+                    try:
+                        page.evaluate("""
+                            () => {
+                                const titles = document.querySelectorAll('.conversationConversationItemtitle');
+                                if (titles.length > 0) {
+                                    titles[titles.length - 1].scrollIntoView({ behavior: 'auto', block: 'end' });
+                                }
+                                const container = document.querySelector('.conversationConversationListwrapper') || 
+                                                  document.querySelector('#imSaasContainerId');
+                                if (container) {
+                                    container.dispatchEvent(new WheelEvent('wheel', { deltaY: 1000, bubbles: true }));
+                                }
+                            }
+                        """)
+                    except Exception:
+                        pass
+                    page.wait_for_timeout(2500)
+                else:
+                    page.wait_for_timeout(1200)
+
+            # 整理联系人列表：火花好友优先置顶排序
+            def _sort_key(c: dict) -> tuple[int, int, str]:
+                st = c.get("streak", "")
+                has_s = bool(c.get("has_spark") or st)
+                # 优先级 0 为有火花，1 为无火花
+                prio = 0 if has_s else 1
+                # 尝试解析火花纯天数数字（倒序排列）
+                numeric_streak = 0
+                if st:
+                    digits = "".join(ch for ch in st if ch.isdigit())
+                    if digits:
+                        try:
+                            numeric_streak = -int(digits)
+                        except Exception:
+                            numeric_streak = 0
+                return (prio, numeric_streak, c.get("name", ""))
+
+            all_contacts = list(contacts_map.values())
+            all_contacts.sort(key=_sort_key)
+
+            result["names"] = all_contacts
+            spark_count = sum(1 for c in all_contacts if c.get("has_spark") or c.get("streak"))
+            logger.info("已读取聊天列表联系人共 %s 个（其中火花好友 %s 个）", len(result["names"]), spark_count)
         finally:
             if browser:
                 try:

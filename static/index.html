@@ -93,18 +93,21 @@
 
         <el-tab-pane label="好友与消息" name="friends">
           <el-card shadow="never">
-            <div style="margin-bottom:14px; display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+            <div style="margin-bottom:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
               <el-button type="primary" :loading="contactsFetching" @click="fetchContacts">获取聊天列表</el-button>
+              <el-button v-if="contacts.length" @click="selectAllSparkFriends">一键勾选火花好友</el-button>
+              <el-button v-if="contacts.length" @click="clearAllSelection">清空勾选</el-button>
+              <el-checkbox v-if="contacts.length" v-model="onlySparkFriends" label="只看火花好友" border size="default"></el-checkbox>
               <span style="color:#909399; font-size:12px;">
-                <template v-if="contacts.length">共 {{ contacts.length }} 个聊天对象，最后更新 {{ fmt(contactsAt) }}</template>
+                <template v-if="contacts.length">共 {{ contacts.length }} 个聊天对象（含 {{ sparkFriendsCount }} 个火花好友），最后更新 {{ fmt(contactsAt) }}</template>
                 <template v-else-if="contactsError">获取失败：{{ contactsError }}</template>
                 <template v-else>点击按钮从抖音聊天列表读取好友，勾选即可，免手动输入</template>
               </span>
             </div>
-            <div v-if="contacts.length" style="margin-bottom:16px; max-height:260px; overflow:auto; border:1px solid #ebeef5; border-radius:6px; padding:10px 14px;">
+            <div v-if="contacts.length" style="margin-bottom:16px; max-height:280px; overflow:auto; border:1px solid #ebeef5; border-radius:6px; padding:10px 14px;">
               <el-checkbox-group v-model="selectedFriends">
-                <el-checkbox v-for="c in contacts" :key="c.name" :label="c.name" style="margin:4px 20px 4px 0;">
-                  {{ c.name }}<el-tag v-if="c.streak" size="small" type="warning" style="margin-left:6px;">🔥 {{ c.streak }}</el-tag>
+                <el-checkbox v-for="c in filteredContacts" :key="c.name" :label="c.name" style="margin:4px 20px 4px 0;">
+                  {{ c.name }}<el-tag v-if="c.streak || c.has_spark" size="small" type="warning" style="margin-left:6px;">🔥 {{ c.streak || '火花' }}</el-tag>
                 </el-checkbox>
               </el-checkbox-group>
             </div>
@@ -230,7 +233,7 @@
   <script src="/static/vendor/element-plus.full.min.js"></script>
   <script src="/static/vendor/axios.min.js"></script>
   <script>
-    const { createApp, ref, reactive, onMounted, onUnmounted, nextTick } = Vue;
+    const { createApp, ref, reactive, computed, onMounted, onUnmounted, nextTick } = Vue;
 
     const app = createApp({
       setup() {
@@ -352,6 +355,24 @@
         function applySelection() {
           friendsText.value = selectedFriends.value.join('\n');
           ElementPlus.ElMessage.success('已把勾选结果写入名单，记得点「保存」');
+        }
+        const onlySparkFriends = ref(false);
+        const sparkFriendsCount = computed(() => {
+          return (contacts.value || []).filter((c) => c.streak || c.has_spark).length;
+        });
+        const filteredContacts = computed(() => {
+          if (!onlySparkFriends.value) return contacts.value || [];
+          return (contacts.value || []).filter((c) => c.streak || c.has_spark);
+        });
+        function selectAllSparkFriends() {
+          const sparks = (contacts.value || []).filter((c) => c.streak || c.has_spark).map((c) => c.name);
+          const current = new Set(selectedFriends.value || []);
+          sparks.forEach((name) => current.add(name));
+          selectedFriends.value = Array.from(current);
+          ElementPlus.ElMessage.success(`已勾选 ${sparks.length} 位火花好友`);
+        }
+        function clearAllSelection() {
+          selectedFriends.value = [];
         }
         async function loadLogs() {
           try {
@@ -509,6 +530,7 @@
         return {
           tab, status, settingsForm, friendsText, messagesText, logs, autoRefresh, uploadFile,
           contacts, contactsAt, contactsError, contactsFetching, selectedFriends,
+          onlySparkFriends, sparkFriendsCount, filteredContacts, selectAllSparkFriends, clearAllSelection,
           videoModeEnabled, videoUrlsText, videoQueue, videoQueueCurrent, videoQueueNext,
           likedVideos, selectedLikedVideos, likesAt, likesError, likesFetching,
           tokenDialog, tokenInput,
