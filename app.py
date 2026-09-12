@@ -165,12 +165,20 @@ def _start_fetch_likes() -> None:
 
 @asynccontextmanager
 async def lifespan(_app: FastAPI):
+    pid_path = DATA_DIR / "app.pid"
     try:
+        DATA_DIR.mkdir(parents=True, exist_ok=True)
+        pid_path.write_text(str(os.getpid()), encoding="utf-8")
         scheduler.configure(lambda: _start_run(False))
     except Exception as e:  # pragma: no cover
         logger.warning("调度器启动失败: %s", e)
     yield
     scheduler.shutdown()
+    if pid_path.exists():
+        try:
+            pid_path.unlink(missing_ok=True)
+        except Exception:
+            pass
 
 
 app = FastAPI(title="Douyin Spark Keeper", lifespan=lifespan)
