@@ -495,12 +495,48 @@
       border-color: var(--border-color);
       color: var(--text-main);
     }
+    /* Element Plus 表格全局与暗色模式适配 (消除悬浮白底) */
+    .el-table {
+      --el-table-header-bg-color: var(--bg-panel-sub);
+      --el-table-header-text-color: var(--text-muted);
+      --el-table-border-color: var(--border-color);
+      --el-table-row-hover-bg-color: var(--bg-panel-sub);
+    }
     html.dark .el-table {
       --el-table-bg-color: var(--bg-panel);
       --el-table-tr-bg-color: var(--bg-panel);
       --el-table-header-bg-color: var(--bg-panel-sub);
+      --el-table-header-text-color: var(--text-muted);
       --el-table-border-color: var(--border-color);
+      --el-table-border: 1px solid var(--border-color);
       --el-table-text-color: var(--text-main);
+      --el-table-row-hover-bg-color: var(--bg-panel-sub);
+      --el-table-current-row-bg-color: var(--bg-panel-sub);
+      --el-table-expanded-cell-bg-color: var(--bg-panel);
+    }
+    html.dark .el-table th.el-table__cell {
+      background-color: var(--bg-panel-sub) !important;
+      color: var(--text-muted) !important;
+      border-bottom: 1px solid var(--border-color) !important;
+    }
+    html.dark .el-table td.el-table__cell {
+      border-bottom: 1px solid var(--border-color) !important;
+      color: var(--text-main);
+    }
+    html.dark .el-table--enable-row-hover .el-table__body tr:hover > td.el-table__cell,
+    html.dark .el-table__body tr.hover-row > td.el-table__cell,
+    html.dark .el-table__body tr.hover-row.current-row > td.el-table__cell {
+      background-color: var(--bg-panel-sub) !important;
+    }
+    html.dark .el-table::before,
+    html.dark .el-table__inner-wrapper::before {
+      background-color: var(--border-color) !important;
+    }
+    html.dark .el-table__empty-block {
+      background-color: var(--bg-panel) !important;
+    }
+    html.dark .el-table__empty-text {
+      color: var(--text-muted) !important;
     }
     html.dark .el-input__wrapper,
     html.dark .el-textarea__inner {
