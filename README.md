@@ -8,6 +8,20 @@
 
 ---
 
+## 界面预览
+
+### 现代极简双栏工作台（原生支持深色 / 浅色模式切换）
+
+| 深色模式（Dark Mode） | 浅色模式（Light Mode） |
+| :---: | :---: |
+| ![深色模式 - 好友管理与调度控制中心](docs/images/workbench_dark.png) | ![浅色模式 - 好友管理与调度控制中心](docs/images/workbench_light.png) |
+
+### 视频转发中心（最近点赞自动拾取与待发队列轮播）
+
+![视频转发中心 - 点赞拾取与待发队列](docs/images/video_forwarding_dark.png)
+
+---
+
 ## 功能特性
 
 - 🖥️ **现代化双栏工作台**：左侧 340px 常驻调度控制中心（倒计时、指标统计、立即发送、干跑模拟）+ 右侧多任务工作区，自适应紧凑排版，彻底消除长滚动
@@ -69,6 +83,8 @@
 ├── deploy/
 │   ├── deploy.sh              # Debian / Ubuntu 一键部署脚本
 │   └── douyin-spark.service   # systemd 系统服务单元配置
+├── docs/                      # 项目文档资源
+│   └── images/                # 界面预览截图
 └── data/                      # 运行时自动生成（已 gitignore）
     ├── config.json            # 业务运行配置
     ├── state.json             # 抖音登录凭证
