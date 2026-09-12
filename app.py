@@ -120,10 +120,20 @@ def _start_fetch_contacts() -> None:
             contacts_fetching = True
             try:
                 record_contacts(automation.fetch_chat_contacts())
+            except Exception as e:
+                logger.error("后台获取联系人异常: %s", e)
+                record_contacts({
+                    "at": datetime.now().astimezone().isoformat(timespec="seconds"),
+                    "names": [],
+                    "error": str(e),
+                })
             finally:
                 contacts_fetching = False
         finally:
             run_lock.release()
+
+    contacts_fetching = True
+    threading.Thread(target=worker, daemon=True).start()
 
 
 def _start_fetch_likes() -> None:
