@@ -16,16 +16,18 @@ apt-get update -y
 apt-get install -y python3 python3-venv python3-pip
 
 echo "==> 创建 Python 虚拟环境"
-if [ ! -x "$VENV/bin/python" ]; then
+if [ ! -x "$VENV/bin/python" ] || ! "$VENV/bin/python" -c "pass" >/dev/null 2>&1; then
+  echo "检测到虚拟环境不存在或路径已失效，正在重新创建..."
+  rm -rf "$VENV"
   python3 -m venv "$VENV"
 fi
 
 echo "==> 安装 Python 依赖"
-"$VENV/bin/pip" install --upgrade pip
-"$VENV/bin/pip" install -r "$SERVICE_DIR/requirements.txt"
+"$VENV/bin/python" -m pip install --upgrade pip
+"$VENV/bin/python" -m pip install -r "$SERVICE_DIR/requirements.txt"
 
 echo "==> 安装 Chromium（首次需下载数百 MB）"
-"$VENV/bin/playwright" install --with-deps chromium
+"$VENV/bin/python" -m playwright install --with-deps chromium
 
 echo "==> 配置 2G 交换空间（1G 内存服务器跑浏览器需要）"
 if ! swapon --show | grep -q 'swap'; then
