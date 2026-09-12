@@ -32,6 +32,8 @@
       --radius-sm: 6px;
       --radius-md: 10px;
       --radius-lg: 14px;
+      --scrollbar-thumb: rgba(148, 163, 184, 0.4);
+      --scrollbar-thumb-hover: rgba(100, 116, 139, 0.65);
     }
 
     /* 暗色模式令牌 */
@@ -47,9 +49,33 @@
       --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
       --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
       --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.5);
+      --scrollbar-thumb: rgba(148, 163, 184, 0.25);
+      --scrollbar-thumb-hover: rgba(148, 163, 184, 0.45);
     }
 
-    * { box-sizing: border-box; margin: 0; padding: 0; }
+    /* 全局细长条美化滚动条 (Webkit + Firefox W3C规范) */
+    * {
+      box-sizing: border-box;
+      margin: 0;
+      padding: 0;
+      scrollbar-width: thin;
+      scrollbar-color: var(--scrollbar-thumb) transparent;
+    }
+    ::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    ::-webkit-scrollbar-track {
+      background: transparent;
+    }
+    ::-webkit-scrollbar-thumb {
+      background: var(--scrollbar-thumb);
+      border-radius: 999px;
+      transition: background-color 0.2s ease;
+    }
+    ::-webkit-scrollbar-thumb:hover {
+      background: var(--scrollbar-thumb-hover);
+    }
     body {
       font-family: var(--font-sans);
       background: var(--bg-app);
@@ -110,9 +136,26 @@
       display: grid;
       grid-template-columns: 340px minmax(0, 1fr);
       gap: 24px;
-      align-items: start;
+      align-items: stretch;
     }
-    .control-hub, .workspace {
+    .control-hub {
+      min-width: 0;
+      display: flex;
+      flex-direction: column;
+    }
+    .control-hub .panel-card:last-child {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      margin-bottom: 0;
+    }
+    .control-hub .panel-card:last-child .panel-body {
+      flex: 1;
+      display: flex;
+      flex-direction: column;
+      justify-content: space-between;
+    }
+    .workspace {
       min-width: 0;
     }
     @media (max-width: 1024px) {
@@ -278,7 +321,7 @@
       display: grid;
       grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
       gap: 10px;
-      max-height: 480px;
+      max-height: 430px;
       overflow-y: auto;
       padding: 2px;
     }
@@ -428,6 +471,47 @@
       background-color: var(--bg-panel-sub) !important;
       box-shadow: 0 0 0 1px var(--border-color) inset !important;
       color: var(--text-main) !important;
+    }
+
+    /* Element Plus 弹窗与通用按钮暗色模式全面适配 (消除硬编码白色) */
+    html.dark .el-dialog {
+      background: var(--bg-panel) !important;
+      border: 1px solid var(--border-color) !important;
+      box-shadow: 0 16px 40px rgba(0, 0, 0, 0.6) !important;
+      border-radius: var(--radius-md) !important;
+    }
+    html.dark .el-dialog__title {
+      color: var(--text-main) !important;
+      font-weight: 700;
+    }
+    html.dark .el-dialog__header {
+      border-bottom: 1px solid var(--border-color);
+      margin-right: 0;
+      padding: 16px 20px;
+    }
+    html.dark .el-dialog__headerbtn .el-dialog__close {
+      color: var(--text-muted) !important;
+    }
+    html.dark .el-dialog__headerbtn:hover .el-dialog__close {
+      color: var(--text-main) !important;
+    }
+    html.dark .el-dialog__body {
+      color: var(--text-main) !important;
+      padding: 20px 24px;
+    }
+    html.dark .el-dialog__footer {
+      border-top: 1px solid var(--border-color);
+      padding: 14px 20px;
+    }
+    html.dark .el-button:not(.el-button--primary):not(.el-button--danger):not(.el-button--success) {
+      background: var(--bg-panel-sub);
+      border-color: var(--border-color);
+      color: var(--text-main);
+    }
+    html.dark .el-button:not(.el-button--primary):not(.el-button--danger):not(.el-button--success):hover {
+      background: var(--border-hover);
+      border-color: var(--border-hover);
+      color: var(--text-main);
     }
   </style>
 </head>
@@ -692,11 +776,11 @@
                     <span>当前生效的续火花名单 (每行一个昵称)</span>
                     <span style="color:var(--text-muted); font-size:12px;">共 {{ config.friends?.length || 0 }} 人</span>
                   </div>
-                  <el-input v-model="friendsText" type="textarea" :rows="5" placeholder="洁洁&#10;黄璨莹&#10;💗不见不散"></el-input>
+                  <el-input v-model="friendsText" type="textarea" :rows="4" placeholder="洁洁&#10;黄璨莹&#10;💗不见不散"></el-input>
                 </div>
                 <div>
                   <div style="font-weight:600; font-size:13px; margin-bottom:6px;">文字消息预设库 (随机选一条发送)</div>
-                  <el-input v-model="messagesText" type="textarea" :rows="5" placeholder="🔥 续火花&#10;晚安，明天见&#10;今天也要开心哦"></el-input>
+                  <el-input v-model="messagesText" type="textarea" :rows="4" placeholder="🔥 续火花&#10;晚安，明天见&#10;今天也要开心哦"></el-input>
                 </div>
               </div>
               <div style="margin-top:14px; text-align:right;">
