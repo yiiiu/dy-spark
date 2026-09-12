@@ -279,8 +279,8 @@
     }
     .friend-card:hover { border-color: var(--brand-flame-1); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
     .friend-card.selected { border-color: var(--brand-flame-1); background: rgba(255, 59, 92, 0.03); }
-    .friend-card-left { display: flex; align-items: center; gap: 8px; overflow: hidden; }
-    .friend-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+    .friend-card-left { display: flex; align-items: center; gap: 8px; overflow: hidden; flex: 1; min-width: 0; margin-right: 6px; }
+    .friend-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; flex: 1; min-width: 0; }
 
     /* 火花胶囊徽章 */
     .spark-tag {
@@ -295,6 +295,7 @@
       font-size: 11px;
       font-weight: 700;
       white-space: nowrap;
+      flex-shrink: 0;
     }
     html.dark .spark-tag {
       background: rgba(239, 68, 68, 0.15);
@@ -649,13 +650,10 @@
                     <input type="checkbox" :checked="isFriendSelected(c.name)" @click.stop style="cursor:pointer;" />
                     <span class="friend-name" :title="c.name">{{ c.name }}</span>
                   </div>
-                  <div>
-                    <span v-if="c.spark_days" class="spark-tag">
+                  <div v-if="isSparkFriend(c)" style="flex-shrink:0;">
+                    <span class="spark-tag">
                       <svg class="icon-flame-badge" viewBox="0 0 24 24"><path d="M12 2c-.5 2.5-3 4.5-3 7 0 2 1.5 3.5 1.5 5 0 2.5-2 4.5-4.5 4.5C3.5 18.5 2 16 2 13c0-4 4-8 4-8s-1 3 1 5c1.5-1.5 2-4 2-6 0-1.5-.5-3-.5-3s2 1 3.5 2.5C13.5 4.5 14 6 14 7.5c0 1.5-1 2.5-1 4 0 2 2 3.5 4.5 3.5 3 0 5.5-2.5 5.5-6 0-5-5-9-11-7z" /></svg>
-                      {{ c.spark_days }}天
-                    </span>
-                    <span v-else-if="c.spark_state" class="spark-tag" style="background:#FFF7ED; color:#C2410C; border-color:#FFEDD5;">
-                      {{ c.spark_state }}
+                      {{ getSparkStreakText(c) }}
                     </span>
                   </div>
                 </div>
@@ -954,14 +952,32 @@
         const likesError = ref(null);
         const likesFetching = ref(false);
 
+        function isSparkFriend(c) {
+          if (!c) return false;
+          return Boolean(c.has_spark || c.streak || c.spark_days || c.spark_state);
+        }
+
+        function getSparkStreakText(c) {
+          if (!c) return '';
+          const streak = c.streak || c.spark_days || c.spark_state || '';
+          if (!streak) {
+            return c.has_spark ? '火花' : '';
+          }
+          const str = String(streak).trim();
+          if (/^\d+$/.test(str)) {
+            return `${str}天`;
+          }
+          return str;
+        }
+
         const sparkFriendsCount = computed(() => {
-          return contacts.value.filter((c) => !!(c.spark_days || c.spark_state)).length;
+          return contacts.value.filter(isSparkFriend).length;
         });
 
         const filteredContacts = computed(() => {
           let list = contacts.value;
           if (onlySparkFriends.value) {
-            list = list.filter((c) => !!(c.spark_days || c.spark_state));
+            list = list.filter(isSparkFriend);
           }
           const kw = friendSearchKeyword.value.trim().toLowerCase();
           if (kw) {
@@ -985,10 +1001,10 @@
 
         function selectAllSparkFriends() {
           const sparkNames = contacts.value
-            .filter((c) => !!(c.spark_days || c.spark_state))
+            .filter(isSparkFriend)
             .map((c) => c.name);
           selectedFriends.value = Array.from(new Set(selectedFriends.value.concat(sparkNames)));
-          ElementPlus.ElMessage.success(`已勾选 ${selectedFriends.value.length} 位好友`);
+          ElementPlus.ElMessage.success(`已勾选 ${sparkNames.length} 位火花好友`);
         }
 
         function clearAllSelection() {
@@ -1326,6 +1342,7 @@
           likedVideos, selectedLikedVideos, likesAt, likesError, likesFetching,
           tokenDialog, tokenInput, isDark, refreshing,
           fmt, fmtShort, loadAll, loadLogs, loadContacts, fetchContacts, handleManualRefresh, toggleDarkMode,
+          isSparkFriend, getSparkStreakText,
           saveFriends, saveSettings, triggerRun, saveVideoMode, addManualVideos, addLikedVideos,
           toggleSelectAllLiked, removeVideo, fetchLikedVideos, triggerVideoRun, handlePrimaryRun, handleDryRun,
           onFileChange, onFileRemove, uploadState, showTokenDialog, saveToken,
