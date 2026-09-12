@@ -3,242 +3,852 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>抖音续火花助手</title>
+  <title>抖音续火花助手 · 工作台</title>
   <link rel="stylesheet" href="/static/vendor/element-plus.css" />
   <style>
-    body { margin: 0; background: #f5f7fa; }
-    .page { max-width: 1080px; margin: 0 auto; padding: 16px; }
-    .header { display: flex; align-items: center; gap: 12px; margin-bottom: 16px; }
-    .header h1 { font-size: 20px; margin: 0 8px 0 0; }
-    .cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin-bottom: 16px; }
-    .cards .el-card { --el-card-padding: 14px; }
-    .card-label { color: #909399; font-size: 12px; margin-bottom: 6px; }
-    .card-value { font-size: 18px; font-weight: 600; }
-    .log-pre { background: #1e1e1e; color: #d4d4d4; padding: 12px; border-radius: 6px; height: 420px; overflow: auto; font-size: 12px; line-height: 1.6; white-space: pre-wrap; }
-    .result-box { margin-top: 12px; }
-    .spacer { flex: 1; }
+    :root {
+      --font-sans: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "PingFang SC", "Hiragino Sans GB", "Microsoft YaHei", sans-serif;
+      --font-mono: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+      
+      /* 亮色设计令牌 */
+      --bg-app: #F8FAFC;
+      --bg-panel: #FFFFFF;
+      --bg-panel-sub: #F1F5F9;
+      --border-color: #E2E8F0;
+      --border-hover: #CBD5E1;
+      --text-main: #0F172A;
+      --text-muted: #64748B;
+      --text-sub: #94A3B8;
+      
+      --brand-flame-1: #FF3B5C;
+      --brand-flame-2: #FF7A00;
+      --brand-flame-3: #FFC107;
+      --brand-primary: #0F172A;
+      --brand-accent: #3B82F6;
+      
+      --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.04);
+      --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.05);
+      --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.08);
+      --radius-sm: 6px;
+      --radius-md: 10px;
+      --radius-lg: 14px;
+    }
+
+    /* 暗色模式令牌 */
+    html.dark {
+      --bg-app: #0B0F17;
+      --bg-panel: #151D2A;
+      --bg-panel-sub: #1E293B;
+      --border-color: #222F3E;
+      --border-hover: #334155;
+      --text-main: #F8FAFC;
+      --text-muted: #94A3B8;
+      --text-sub: #64748B;
+      --shadow-sm: 0 1px 3px rgba(0, 0, 0, 0.3);
+      --shadow-md: 0 4px 16px rgba(0, 0, 0, 0.4);
+      --shadow-lg: 0 8px 30px rgba(0, 0, 0, 0.5);
+    }
+
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body {
+      font-family: var(--font-sans);
+      background: var(--bg-app);
+      color: var(--text-main);
+      min-height: 100vh;
+      line-height: 1.5;
+      transition: background-color 0.2s ease, color 0.2s ease;
+    }
+
+    /* 顶部导航 Header */
+    .app-header {
+      background: var(--bg-panel);
+      border-bottom: 1px solid var(--border-color);
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: var(--shadow-sm);
+    }
+    .header-inner {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 12px 24px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 16px;
+    }
+    .brand-group { display: flex; align-items: center; gap: 12px; }
+    .brand-title {
+      font-size: 17px;
+      font-weight: 700;
+      letter-spacing: -0.2px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    .pulse-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+      background: #10B981;
+      box-shadow: 0 0 0 4px rgba(16, 185, 129, 0.2);
+      animation: pulse 2.5s infinite;
+    }
+    @keyframes pulse {
+      0% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0.4); }
+      70% { box-shadow: 0 0 0 6px rgba(16, 185, 129, 0); }
+      100% { box-shadow: 0 0 0 0 rgba(16, 185, 129, 0); }
+    }
+
+    .header-actions { display: flex; align-items: center; gap: 10px; }
+
+    /* 主体双栏布局 */
+    .app-container {
+      max-width: 1440px;
+      margin: 0 auto;
+      padding: 24px;
+    }
+    .main-grid {
+      display: grid;
+      grid-template-columns: 340px minmax(0, 1fr);
+      gap: 24px;
+      align-items: start;
+    }
+    .control-hub, .workspace {
+      min-width: 0;
+    }
+    @media (max-width: 1024px) {
+      .main-grid { grid-template-columns: 1fr; }
+    }
+
+    /* 卡片容器 */
+    .panel-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-md);
+      box-shadow: var(--shadow-sm);
+      overflow: hidden;
+      margin-bottom: 20px;
+      transition: border-color 0.2s, box-shadow 0.2s;
+    }
+    .panel-card:hover { border-color: var(--border-hover); }
+    .panel-header {
+      padding: 14px 18px;
+      border-bottom: 1px solid var(--border-color);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    .panel-body { padding: 18px; }
+
+    /* 左侧控制台指标 */
+    .metric-row { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; margin-bottom: 16px; }
+    .metric-box {
+      background: var(--bg-panel-sub);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 12px 14px;
+    }
+    .metric-label { font-size: 11px; color: var(--text-muted); display: flex; align-items: center; gap: 4px; margin-bottom: 4px; }
+    .metric-val { font-size: 20px; font-weight: 700; color: var(--text-main); }
+
+    /* 倒计时看板 */
+    .next-run-banner {
+      background: var(--bg-panel-sub);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 14px;
+      margin-bottom: 16px;
+    }
+    .next-run-title { font-size: 12px; color: var(--text-muted); display: flex; align-items: center; gap: 6px; margin-bottom: 6px; }
+    .next-run-time { font-size: 24px; font-weight: 800; font-family: var(--font-mono); color: var(--text-main); letter-spacing: -0.5px; }
+
+    /* 核心行动按钮 */
+    .btn-action-main {
+      width: 100%;
+      padding: 12px 16px;
+      border: none;
+      border-radius: var(--radius-sm);
+      background: linear-gradient(135deg, var(--brand-flame-1), var(--brand-flame-2));
+      color: #FFF;
+      font-size: 14px;
+      font-weight: 700;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 8px;
+      box-shadow: 0 4px 12px rgba(255, 59, 92, 0.25);
+      transition: filter 0.15s, transform 0.15s;
+      margin-bottom: 10px;
+    }
+    .btn-action-main:hover:not(:disabled) { filter: brightness(1.06); transform: translateY(-1px); }
+    .btn-action-main:disabled { opacity: 0.6; cursor: not-allowed; }
+
+    .btn-action-sub {
+      width: 100%;
+      padding: 10px 16px;
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      background: var(--bg-panel);
+      color: var(--text-main);
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 6px;
+      transition: all 0.15s;
+    }
+    .btn-action-sub:hover:not(:disabled) { border-color: var(--border-hover); background: var(--bg-panel-sub); }
+
+    /* 右侧工作区 Tab 导航 */
+    .workspace-tabs {
+      display: flex;
+      gap: 4px;
+      border-bottom: 1px solid var(--border-color);
+      margin-bottom: 20px;
+      background: var(--bg-panel);
+      padding: 6px 6px 0 6px;
+      border-radius: var(--radius-md) var(--radius-md) 0 0;
+    }
+    .w-tab-item {
+      padding: 10px 18px;
+      border-radius: var(--radius-sm) var(--radius-sm) 0 0;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--text-muted);
+      display: flex;
+      align-items: center;
+      gap: 8px;
+      transition: all 0.15s;
+      border-bottom: 2px solid transparent;
+      user-select: none;
+    }
+    .w-tab-item:hover { color: var(--text-main); background: var(--bg-panel-sub); }
+    .w-tab-item.active {
+      color: var(--text-main);
+      border-bottom-color: var(--brand-flame-1);
+      background: var(--bg-panel);
+    }
+    .tab-badge {
+      background: var(--bg-panel-sub);
+      color: var(--text-muted);
+      font-size: 11px;
+      padding: 1px 6px;
+      border-radius: 10px;
+    }
+    .w-tab-item.active .tab-badge {
+      background: rgba(255, 59, 92, 0.1);
+      color: var(--brand-flame-1);
+    }
+
+    /* 好友列表卡片流 */
+    .contacts-toolbar {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      flex-wrap: wrap;
+      margin-bottom: 16px;
+      background: var(--bg-panel-sub);
+      padding: 10px 14px;
+      border-radius: var(--radius-sm);
+    }
+    .friend-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(210px, 1fr));
+      gap: 10px;
+      max-height: 480px;
+      overflow-y: auto;
+      padding: 2px;
+    }
+    .friend-card {
+      background: var(--bg-panel);
+      border: 1px solid var(--border-color);
+      border-radius: var(--radius-sm);
+      padding: 10px 12px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      cursor: pointer;
+      transition: border-color 0.15s, transform 0.15s, box-shadow 0.15s;
+      user-select: none;
+    }
+    .friend-card:hover { border-color: var(--brand-flame-1); transform: translateY(-1px); box-shadow: var(--shadow-sm); }
+    .friend-card.selected { border-color: var(--brand-flame-1); background: rgba(255, 59, 92, 0.03); }
+    .friend-card-left { display: flex; align-items: center; gap: 8px; overflow: hidden; }
+    .friend-name { font-size: 13px; font-weight: 600; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 120px; }
+
+    /* 火花胶囊徽章 */
+    .spark-tag {
+      display: inline-flex;
+      align-items: center;
+      gap: 3px;
+      background: #FEF2F2;
+      color: #DC2626;
+      border: 1px solid #FEE2E2;
+      border-radius: 12px;
+      padding: 2px 7px;
+      font-size: 11px;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    html.dark .spark-tag {
+      background: rgba(239, 68, 68, 0.15);
+      border-color: rgba(239, 68, 68, 0.3);
+      color: #F87171;
+    }
+
+    /* 视频模块双列 */
+    .video-workspace-grid {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(0, 1.25fr);
+      gap: 20px;
+      align-items: start;
+    }
+    .video-workspace-grid > div {
+      min-width: 0;
+    }
+    @media (max-width: 1024px) {
+      .video-workspace-grid { grid-template-columns: 1fr; }
+    }
+
+    /* 点赞复选框换行样式 */
+    .liked-video-checkbox {
+      display: flex !important;
+      align-items: flex-start !important;
+      margin: 8px 0 !important;
+      white-space: normal !important;
+      height: auto !important;
+    }
+    .liked-video-checkbox .el-checkbox__label {
+      white-space: normal !important;
+      word-break: break-all;
+      line-height: 1.4;
+      padding-left: 8px;
+      font-size: 13px;
+    }
+
+    /* 极客终端日志 */
+    .terminal-window {
+      background: #090D16;
+      border: 1px solid #1E293B;
+      border-radius: var(--radius-md);
+      overflow: hidden;
+      box-shadow: var(--shadow-md);
+    }
+    .terminal-bar {
+      background: #0F172A;
+      padding: 10px 16px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      border-bottom: 1px solid #1E293B;
+    }
+    .terminal-dots { display: flex; gap: 6px; }
+    .t-dot { width: 10px; height: 10px; border-radius: 50%; }
+    .t-dot-red { background: #EF4444; }
+    .t-dot-yellow { background: #F59E0B; }
+    .t-dot-green { background: #10B981; }
+    .terminal-body {
+      padding: 16px;
+      height: 480px;
+      overflow-y: auto;
+      font-family: var(--font-mono);
+      font-size: 12px;
+      line-height: 1.65;
+      color: #94A3B8;
+      white-space: pre-wrap;
+    }
+
+    /* 矢量 SVG 基础类 */
+    .lucide-icon {
+      width: 16px;
+      height: 16px;
+      stroke-width: 1.8;
+      stroke: currentColor;
+      fill: none;
+      stroke-linecap: round;
+      stroke-linejoin: round;
+      vertical-align: middle;
+      flex-shrink: 0;
+    }
+    .icon-flame-brand {
+      width: 22px;
+      height: 22px;
+      fill: url(#flameGrad);
+      stroke: none;
+      filter: drop-shadow(0 2px 5px rgba(255, 59, 92, 0.4));
+    }
+    .icon-flame-badge {
+      width: 13px;
+      height: 13px;
+      fill: url(#flameGrad);
+      stroke: none;
+    }
+
+    /* Element Plus 局部样式微调适配暗色 */
+    html.dark .el-card {
+      background: var(--bg-panel);
+      border-color: var(--border-color);
+      color: var(--text-main);
+    }
+    html.dark .el-table {
+      --el-table-bg-color: var(--bg-panel);
+      --el-table-tr-bg-color: var(--bg-panel);
+      --el-table-header-bg-color: var(--bg-panel-sub);
+      --el-table-border-color: var(--border-color);
+      --el-table-text-color: var(--text-main);
+    }
+    html.dark .el-input__wrapper,
+    html.dark .el-textarea__inner {
+      background-color: var(--bg-panel-sub) !important;
+      box-shadow: 0 0 0 1px var(--border-color) inset !important;
+      color: var(--text-main) !important;
+    }
   </style>
 </head>
 <body>
-  <div id="app">
-    <div class="page">
-      <div class="header">
-        <h1>🔥 抖音续火花助手</h1>
-        <el-tag v-if="status.session_status === 'ok'" type="success">登录正常</el-tag>
-        <el-tag v-else-if="status.session_status === 'expired'" type="danger">登录态已过期</el-tag>
-        <el-tag v-else-if="status.session_status === 'partial'" type="warning">部分发送成功</el-tag>
-        <el-tag v-else-if="status.session_status === 'failed'" type="danger">发送失败</el-tag>
-        <el-tag v-else type="info">状态未知</el-tag>
-        <el-tag v-if="status.running" type="warning">运行中…</el-tag>
-        <div class="spacer"></div>
-        <el-button size="small" @click="loadAll">刷新</el-button>
-        <el-button size="small" @click="showTokenDialog">令牌</el-button>
+
+<!-- 全局 SVG 矢量渐变池 -->
+<svg style="display:none;">
+  <defs>
+    <linearGradient id="flameGrad" x1="0%" y1="100%" x2="0%" y2="0%">
+      <stop offset="0%" stop-color="#FF3B5C" />
+      <stop offset="60%" stop-color="#FF7A00" />
+      <stop offset="100%" stop-color="#FFC107" />
+    </linearGradient>
+  </defs>
+</svg>
+
+<div id="app">
+  <!-- 顶部导航栏 Header -->
+  <header class="app-header">
+    <div class="header-inner">
+      <div class="brand-group">
+        <svg class="icon-flame-brand" viewBox="0 0 24 24">
+          <path d="M12 2c-.5 2.5-3 4.5-3 7 0 2 1.5 3.5 1.5 5 0 2.5-2 4.5-4.5 4.5C3.5 18.5 2 16 2 13c0-4 4-8 4-8s-1 3 1 5c1.5-1.5 2-4 2-6 0-1.5-.5-3-.5-3s2 1 3.5 2.5C13.5 4.5 14 6 14 7.5c0 1.5-1 2.5-1 4 0 2 2 3.5 4.5 3.5 3 0 5.5-2.5 5.5-6 0-5-5-9-11-7z" />
+        </svg>
+        <span class="brand-title">抖音续火花助手</span>
+        <span style="display:inline-flex; align-items:center; gap:6px; background:var(--bg-panel-sub); border:1px solid var(--border-color); padding:3px 10px; border-radius:12px; font-size:12px; font-weight:600;">
+          <span class="pulse-dot"></span>
+          <span v-if="status.session_status === 'ok'" style="color:#10B981;">登录正常</span>
+          <span v-else-if="status.session_status === 'expired'" style="color:#EF4444;">登录态已过期</span>
+          <span v-else-if="status.session_status === 'partial'" style="color:#F59E0B;">部分发送成功</span>
+          <span v-else-if="status.session_status === 'failed'" style="color:#EF4444;">发送失败</span>
+          <span v-else style="color:var(--text-muted);">状态未知</span>
+        </span>
+        <span v-if="status.running" style="display:inline-flex; align-items:center; gap:4px; font-size:12px; color:#F59E0B; font-weight:600;">
+          <svg class="lucide-icon" style="animation:spin 1.5s linear infinite;" viewBox="0 0 24 24"><path d="M21 12a9 9 0 1 1-6.219-8.56"/></svg>
+          任务执行中…
+        </span>
       </div>
 
-      <el-tabs v-model="tab">
-        <el-tab-pane label="概览" name="overview">
-          <div class="cards">
-            <el-card shadow="never">
-              <div class="card-label">登录态文件</div>
-              <div class="card-value">{{ status.state_file_exists ? '已上传' : '未上传' }}</div>
-            </el-card>
-            <el-card shadow="never">
-              <div class="card-label">运行状态</div>
-              <div class="card-value">{{ status.running ? '运行中' : '空闲' }}</div>
-            </el-card>
-            <el-card shadow="never">
-              <div class="card-label">下次自动发送</div>
-              <div class="card-value">{{ fmt(status.next_run) || '未设置' }}</div>
-            </el-card>
-            <el-card shadow="never">
-              <div class="card-label">历史执行次数</div>
-              <div class="card-value">{{ status.history_count }}</div>
-            </el-card>
-          </div>
+      <div class="header-actions">
+        <!-- 浅色/暗色切换按钮 -->
+        <el-button size="small" @click="toggleDarkMode" style="display:inline-flex; align-items:center; gap:5px;">
+          <svg v-if="isDark" class="lucide-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="4"/><path d="M12 2v2"/><path d="M12 20v2"/><path d="m4.93 4.93 1.41 1.41"/><path d="m17.66 17.66 1.41 1.41"/><path d="M2 12h2"/><path d="M20 12h2"/><path d="m6.34 17.66-1.41 1.41"/><path d="m19.07 4.93-1.41 1.41"/></svg>
+          <svg v-else class="lucide-icon" viewBox="0 0 24 24"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>
+          {{ isDark ? '浅色' : '深色' }}
+        </el-button>
 
-          <el-card shadow="never">
-            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
-              <el-button type="primary" :loading="status.running" @click="triggerRun(false)">立即发送</el-button>
-              <el-button :loading="status.running" @click="triggerRun(true)">干跑测试（不真实发送）</el-button>
+        <el-button size="small" @click="showTokenDialog" style="display:inline-flex; align-items:center; gap:5px;">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="m21 2-2 2m-7.61 7.61a5.5 5.5 0 1 1-7.778 7.778 5.5 5.5 0 0 1 7.777-7.777zm0 0L15.5 7.5m0 0 3 3L22 7l-3-3m-3.5 3.5L19 4"/></svg>
+          令牌
+        </el-button>
+
+        <el-button size="small" :loading="refreshing" @click="handleManualRefresh" style="display:inline-flex; align-items:center; gap:5px;">
+          <svg class="lucide-icon" viewBox="0 0 24 24"><path d="M3 12a9 9 0 0 1 9-9 9.75 9.75 0 0 1 6.74 2.74L21 8"/><path d="M21 3v5h-5"/><path d="M21 12a9 9 0 0 1-9 9 9.75 9.75 0 0 1-6.74-2.74L3 16"/><path d="M8 16H3v5"/></svg>
+          刷新
+        </el-button>
+      </div>
+    </div>
+  </header>
+
+  <!-- 主工作台容器 -->
+  <main class="app-container">
+    <div class="main-grid">
+      <!-- 左栏：控制中心 Control Hub (340px) -->
+      <aside class="control-hub">
+        <!-- 运行状态与定时看板 -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <span style="display:flex; align-items:center; gap:6px;">
+              <svg class="lucide-icon" viewBox="0 0 24 24"><rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 8 6 4-6 4Z"/></svg>
+              调度控制中心
+            </span>
+            <span v-if="status.running" style="font-size:12px; color:#F59E0B;">运行中</span>
+            <span v-else style="font-size:12px; color:#10B981;">就绪待命</span>
+          </div>
+          <div class="panel-body">
+            <!-- 下次执行时间倒计时 -->
+            <div class="next-run-banner">
+              <div class="next-run-title">
+                <svg class="lucide-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+                下次定时发送 (Asia/Shanghai)
+              </div>
+              <div class="next-run-time">{{ fmtShort(status.next_run) || '未设置' }}</div>
+            </div>
+
+            <!-- 关键指标卡 -->
+            <div class="metric-row">
+              <div class="metric-box">
+                <div class="metric-label">
+                  <svg class="lucide-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+                  续火花名单
+                </div>
+                <div class="metric-val">{{ config.friends?.length || 0 }} <span style="font-size:12px; color:#DC2626; font-weight:600;">🔥 {{ sparkFriendsCount }}</span></div>
+              </div>
+              <div class="metric-box">
+                <div class="metric-label">
+                  <svg class="lucide-icon" viewBox="0 0 24 24"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2"/></svg>
+                  视频队列余量
+                </div>
+                <div class="metric-val">{{ videoQueue.length }} 条</div>
+              </div>
+            </div>
+
+            <!-- 核心行动按钮 -->
+            <button class="btn-action-main" :disabled="status.running" @click="handlePrimaryRun">
+              <svg class="lucide-icon" style="stroke:#FFF;" viewBox="0 0 24 24"><polygon points="5 3 19 12 5 21 5 3"/></svg>
+              {{ status.running ? '任务正在执行中…' : (videoModeEnabled ? '立即发送当前视频' : '立即执行火花发送') }}
+            </button>
+            <button class="btn-action-sub" :disabled="status.running" @click="handleDryRun">
+              <svg class="lucide-icon" viewBox="0 0 24 24"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.3-4.3"/></svg>
+              干跑模拟验证 (Dry-Run)
+            </button>
+
+            <!-- 运行规则速览卡 -->
+            <div style="margin-top:16px; padding-top:14px; border-top:1px solid var(--border-color);">
+              <div style="font-size:12px; font-weight:600; color:var(--text-muted); margin-bottom:8px; display:flex; align-items:center; gap:5px;">
+                <svg class="lucide-icon" viewBox="0 0 24 24"><path d="M12.22 2h-.44a2 2 0 0 0-2 2v.18a2 2 0 0 1-1 1.73l-.43.25a2 2 0 0 1 1 1.72v.51a2 2 0 0 1-1 1.74l-.15.09a2 2 0 0 0-.73 2.73l.22.38a2 2 0 0 0 2.73.73l.15-.08a2 2 0 0 1 2 0l.43.25a2 2 0 0 1 1 1.73V20a2 2 0 0 0 2 2h.44a2 2 0 0 0 2-2v-.18a2 2 0 0 1 1-1.73l.43-.25a2 2 0 0 1 2 0l.15.08a2 2 0 0 0 2.73-.73l.22-.39a2 2 0 0 0-.73-2.73l-.15-.08a2 2 0 0 1-1-1.74v-.5a2 2 0 0 1 1-1.74l.15-.09a2 2 0 0 0 .73-2.73l-.22-.38a2 2 0 0 0-2.73-.73l-.15.08a2 2 0 0 1-2 0l-.43-.25a2 2 0 0 1-1-1.73V4a2 2 0 0 0-2-2z"/><circle cx="12" cy="12" r="3"/></svg>
+                当前调度规则
+              </div>
+              <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted); margin-bottom:6px;">
+                <span>间隔时间:</span> <b>{{ config.send_gap_min || 6 }} ~ {{ config.send_gap_max || 12 }} 秒</b>
+              </div>
+              <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted); margin-bottom:6px;">
+                <span>抖动窗口:</span> <b>{{ config.jitter_minutes || 30 }} 分钟</b>
+              </div>
+              <div style="display:flex; justify-content:space-between; font-size:12px; color:var(--text-muted);">
+                <span>模式状态:</span> <b>{{ videoModeEnabled ? '视频转发模式' : '文字模式' }}</b>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- 登录态与上次执行结果卡片 -->
+        <div class="panel-card">
+          <div class="panel-header">
+            <span style="display:flex; align-items:center; gap:6px;">
+              <svg class="lucide-icon" viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" x2="12" y1="3" y2="15"/></svg>
+              登录态 (state.json)
+            </span>
+            <span style="font-size:12px; font-weight:600;" :style="{ color: status.state_file_exists ? '#10B981' : '#EF4444' }">
+              {{ status.state_file_exists ? '已上传有效' : '尚未上传' }}
+            </span>
+          </div>
+          <div class="panel-body">
+            <div style="display:flex; gap:8px; align-items:center;">
               <el-upload
                 :auto-upload="false"
                 :limit="1"
                 accept=".json"
                 :on-change="onFileChange"
                 :on-remove="onFileRemove"
-                style="display:inline-block;">
-                <el-button>选择 state.json</el-button>
+                style="flex:1;">
+                <el-button size="small" style="width:100%;">选择 state.json</el-button>
               </el-upload>
-              <el-button type="success" :disabled="!uploadFile" @click="uploadState">上传登录态</el-button>
+              <el-button size="small" type="success" :disabled="!uploadFile" @click="uploadState">更新上传</el-button>
             </div>
-            <div class="result-box" v-if="status.last_run">
-              <el-divider content-position="left">上次执行（{{ fmt(status.last_run.at) }}<template v-if="status.last_run.dry_run">，干跑</template>）</el-divider>
-              <div style="margin-bottom:6px;">
-                <span style="color:#67c23a;">成功 {{ status.last_run.ok.length }} 人：</span>
-                <el-tag v-for="n in status.last_run.ok" :key="n" size="small" type="success" style="margin:2px;">{{ n }}</el-tag>
+
+            <!-- 上次执行状态反馈 -->
+            <div v-if="status.last_run" style="margin-top:14px; padding-top:12px; border-top:1px solid var(--border-color); font-size:12px;">
+              <div style="color:var(--text-muted); margin-bottom:6px;">
+                上次执行: <b>{{ fmt(status.last_run.at) }}</b>
+                <span v-if="status.last_run.dry_run" style="color:#0EA5E9;"> (干跑)</span>
               </div>
-              <div>
-                <span style="color:#f56c6c;">失败 {{ status.last_run.failed.length }} 人：</span>
+              <div style="display:flex; gap:10px;">
+                <span style="color:#10B981;">成功 {{ status.last_run.ok?.length || 0 }} 人</span>
+                <span style="color:#EF4444;">失败 {{ status.last_run.failed?.length || 0 }} 人</span>
+              </div>
+              <div v-if="status.last_run.failed?.length" style="margin-top:6px;">
                 <el-tooltip v-for="f in status.last_run.failed" :key="f.name" :content="f.reason" placement="top">
                   <el-tag size="small" type="danger" style="margin:2px;">{{ f.name }}</el-tag>
                 </el-tooltip>
               </div>
-              <el-alert v-if="status.last_run.logged_out" type="error" :closable="false" style="margin-top:8px;"
-                title="登录态已过期：请在电脑上重新运行 extract_cookie.py 并重新上传登录态"></el-alert>
-              <el-alert v-else-if="status.last_run.rate_limited" type="warning" :closable="false" style="margin-top:8px;"
-                title="疑似触发抖音限流：本轮已停止，下次定时任务会自动补发"></el-alert>
             </div>
-          </el-card>
-        </el-tab-pane>
+          </div>
+        </div>
+      </aside>
 
-        <el-tab-pane label="好友与消息" name="friends">
-          <el-card shadow="never">
-            <div style="margin-bottom:14px; display:flex; gap:10px; align-items:center; flex-wrap:wrap;">
-              <el-button type="primary" :loading="contactsFetching" @click="fetchContacts">获取聊天列表</el-button>
-              <el-button v-if="contacts.length" @click="selectAllSparkFriends">一键勾选火花好友</el-button>
-              <el-button v-if="contacts.length" @click="clearAllSelection">清空勾选</el-button>
-              <el-checkbox v-if="contacts.length" v-model="onlySparkFriends" label="只看火花好友" border size="default"></el-checkbox>
-              <span style="color:#909399; font-size:12px;">
-                <template v-if="contacts.length">共 {{ contacts.length }} 个聊天对象（含 {{ sparkFriendsCount }} 个火花好友），最后更新 {{ fmt(contactsAt) }}</template>
-                <template v-else-if="contactsError">获取失败：{{ contactsError }}</template>
-                <template v-else>点击按钮从抖音聊天列表读取好友，勾选即可，免手动输入</template>
-              </span>
-            </div>
-            <div v-if="contacts.length" style="margin-bottom:16px; max-height:280px; overflow:auto; border:1px solid #ebeef5; border-radius:6px; padding:10px 14px;">
-              <el-checkbox-group v-model="selectedFriends">
-                <el-checkbox v-for="c in filteredContacts" :key="c.name" :label="c.name" style="margin:4px 20px 4px 0;">
-                  {{ c.name }}<el-tag v-if="c.streak || c.has_spark" size="small" type="warning" style="margin-left:6px;">🔥 {{ c.streak || '火花' }}</el-tag>
-                </el-checkbox>
-              </el-checkbox-group>
-            </div>
-            <el-form label-width="110px">
-              <el-form-item label="续火花好友">
-                <el-input v-model="friendsText" type="textarea" :rows="5"
-                  placeholder="已选好友名单（每行一个）；也可手动补充聊天列表里显示的备注 / 昵称 / 抖音号"></el-input>
-              </el-form-item>
-              <el-form-item label="消息模板">
-                <el-input v-model="messagesText" type="textarea" :rows="5"
-                  placeholder="每行一条，每次随机选择一条发送"></el-input>
-              </el-form-item>
-              <el-form-item>
-                <el-button type="primary" @click="saveFriends">保存</el-button>
-                <el-button @click="applySelection">把勾选结果写入名单</el-button>
-              </el-form-item>
-            </el-form>
-          </el-card>
-        </el-tab-pane>
+      <!-- 右栏：多任务工作区 (Tabbed Workspace) -->
+      <section class="workspace">
+        <!-- 标签页顶栏 -->
+        <nav class="workspace-tabs">
+          <div class="w-tab-item" :class="{ active: tab === 'friends' }" @click="tab = 'friends'">
+            <svg class="lucide-icon" viewBox="0 0 24 24"><path d="M16 21v-2a4 4 0 0 0-4-4H6a4 4 0 0 0-4 4v2"/><circle cx="9" cy="7" r="4"/><path d="M22 21v-2a4 4 0 0 0-3-3.87"/><path d="M16 3.13a4 4 0 0 1 0 7.75"/></svg>
+            <span>好友名单管理</span>
+            <span class="tab-badge">{{ filteredContacts.length }}</span>
+          </div>
+          <div class="w-tab-item" :class="{ active: tab === 'videos' }" @click="tab = 'videos'">
+            <svg class="lucide-icon" viewBox="0 0 24 24"><path d="m22 8-6 4 6 4V8Z"/><rect width="14" height="12" x="2" y="6" rx="2"/></svg>
+            <span>视频转发中心</span>
+            <span class="tab-badge">{{ videoQueue.length }}</span>
+          </div>
+          <div class="w-tab-item" :class="{ active: tab === 'settings' }" @click="tab = 'settings'">
+            <svg class="lucide-icon" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+            <span>定时设置</span>
+          </div>
+          <div class="w-tab-item" :class="{ active: tab === 'logs' }" @click="tab = 'logs'">
+            <svg class="lucide-icon" viewBox="0 0 24 24"><polyline points="4 17 10 11 4 5"/><line x1="12" x2="20" y1="19" y2="19"/></svg>
+            <span>控制台日志</span>
+          </div>
+        </nav>
 
-        <el-tab-pane label="视频转发" name="videos">
-          <el-card shadow="never">
-            <div style="display:flex; align-items:center; gap:14px; flex-wrap:wrap; margin-bottom:14px;">
-              <el-switch v-model="videoModeEnabled" active-text="启用视频模式" @change="saveVideoMode"></el-switch>
-              <span style="color:#909399; font-size:12px;">启用后，定时任务每批向好友发送队列当前视频；卡片失败自动回退为链接。</span>
-              <div class="spacer"></div>
-              <el-button type="primary" :loading="status.running" :disabled="!videoQueue.length" @click="triggerVideoRun(false)">立即发送当前视频</el-button>
-              <el-button :loading="status.running" :disabled="!videoQueue.length" @click="triggerVideoRun(true)">干跑测试</el-button>
+        <!-- Tab 1: 好友名单管理 -->
+        <div v-show="tab === 'friends'">
+          <div class="panel-card">
+            <div class="panel-header">
+              <span>聊天会话与火花好友</span>
+              <span style="font-size:12px; color:var(--text-muted);">共 {{ contacts.length }} 个聊天对象，发现 {{ sparkFriendsCount }} 位火花好友</span>
+            </div>
+            <div class="panel-body">
+              <!-- 工具栏 -->
+              <div class="contacts-toolbar">
+                <div style="display:flex; gap:8px; align-items:center; flex-wrap:wrap;">
+                  <el-button type="primary" size="small" :loading="contactsFetching" @click="fetchContacts" style="display:inline-flex; align-items:center; gap:4px;">
+                    <svg class="lucide-icon" viewBox="0 0 24 24"><path d="M21 12a9 9 0 0 0-9-9 9.75 9.75 0 0 0-6.74 2.74L3 8"/><path d="M3 3v5h5"/><path d="M3 12a9 9 0 0 0 9 9 9.75 9.75 0 0 0 6.74-2.74L21 16"/><path d="M16 16h5v5"/></svg>
+                    获取最新好友列表
+                  </el-button>
+                  <el-button v-if="contacts.length" size="small" @click="selectAllSparkFriends" style="display:inline-flex; align-items:center; gap:4px;">
+                    <svg class="icon-flame-badge" viewBox="0 0 24 24"><path d="M12 2c-.5 2.5-3 4.5-3 7 0 2 1.5 3.5 1.5 5 0 2.5-2 4.5-4.5 4.5C3.5 18.5 2 16 2 13c0-4 4-8 4-8s-1 3 1 5c1.5-1.5 2-4 2-6 0-1.5-.5-3-.5-3s2 1 3.5 2.5C13.5 4.5 14 6 14 7.5c0 1.5-1 2.5-1 4 0 2 2 3.5 4.5 3.5 3 0 5.5-2.5 5.5-6 0-5-5-9-11-7z" /></svg>
+                    一键勾选火花好友
+                  </el-button>
+                  <el-button v-if="contacts.length" size="small" @click="clearAllSelection">清空勾选</el-button>
+                  <el-checkbox v-if="contacts.length" v-model="onlySparkFriends" label="只看火花好友" size="small"></el-checkbox>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <el-input v-model="friendSearchKeyword" placeholder="过滤昵称/备注..." size="small" clearable style="width:160px;"></el-input>
+                  <el-button v-if="contacts.length" size="small" type="primary" @click="applySelection">填入续火花名单 ({{ selectedFriends.length }})</el-button>
+                </div>
+              </div>
+
+              <!-- 好友列表网格 -->
+              <div v-if="filteredContacts.length" class="friend-grid">
+                <div
+                  v-for="c in filteredContacts"
+                  :key="c.name"
+                  class="friend-card"
+                  :class="{ selected: isFriendSelected(c.name) }"
+                  @click="toggleFriendSelection(c.name)">
+                  <div class="friend-card-left">
+                    <input type="checkbox" :checked="isFriendSelected(c.name)" @click.stop style="cursor:pointer;" />
+                    <span class="friend-name" :title="c.name">{{ c.name }}</span>
+                  </div>
+                  <div>
+                    <span v-if="c.spark_days" class="spark-tag">
+                      <svg class="icon-flame-badge" viewBox="0 0 24 24"><path d="M12 2c-.5 2.5-3 4.5-3 7 0 2 1.5 3.5 1.5 5 0 2.5-2 4.5-4.5 4.5C3.5 18.5 2 16 2 13c0-4 4-8 4-8s-1 3 1 5c1.5-1.5 2-4 2-6 0-1.5-.5-3-.5-3s2 1 3.5 2.5C13.5 4.5 14 6 14 7.5c0 1.5-1 2.5-1 4 0 2 2 3.5 4.5 3.5 3 0 5.5-2.5 5.5-6 0-5-5-9-11-7z" /></svg>
+                      {{ c.spark_days }}天
+                    </span>
+                    <span v-else-if="c.spark_state" class="spark-tag" style="background:#FFF7ED; color:#C2410C; border-color:#FFEDD5;">
+                      {{ c.spark_state }}
+                    </span>
+                  </div>
+                </div>
+              </div>
+              <el-empty v-else description="暂无联系人，请先点击「获取最新好友列表」"></el-empty>
+
+              <!-- 名单与文案配置区域 -->
+              <div style="display:grid; grid-template-columns:1fr 1fr; gap:20px; margin-top:20px; padding-top:16px; border-top:1px solid var(--border-color);">
+                <div>
+                  <div style="font-weight:600; font-size:13px; margin-bottom:6px; display:flex; justify-content:space-between;">
+                    <span>当前生效的续火花名单 (每行一个昵称)</span>
+                    <span style="color:var(--text-muted); font-size:12px;">共 {{ config.friends?.length || 0 }} 人</span>
+                  </div>
+                  <el-input v-model="friendsText" type="textarea" :rows="5" placeholder="洁洁&#10;黄璨莹&#10;💗不见不散"></el-input>
+                </div>
+                <div>
+                  <div style="font-weight:600; font-size:13px; margin-bottom:6px;">文字消息预设库 (随机选一条发送)</div>
+                  <el-input v-model="messagesText" type="textarea" :rows="5" placeholder="🔥 续火花&#10;晚安，明天见&#10;今天也要开心哦"></el-input>
+                </div>
+              </div>
+              <div style="margin-top:14px; text-align:right;">
+                <el-button type="primary" @click="saveFriends">保存名单与文案</el-button>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Tab 2: 视频转发中心 (双列彻底消除大翻滚) -->
+        <div v-show="tab === 'videos'">
+          <!-- 视频模式顶栏状态 -->
+          <div class="panel-card" style="margin-bottom:16px;">
+            <div class="panel-body" style="display:flex; align-items:center; justify-content:space-between; flex-wrap:wrap; gap:12px;">
+              <div style="display:flex; align-items:center; gap:14px;">
+                <el-switch v-model="videoModeEnabled" active-text="启用视频转发模式" @change="saveVideoMode"></el-switch>
+                <span style="color:var(--text-muted); font-size:12px;">开启后，定时发送优先转发队列中的当前视频；卡片失败自动降级发链接</span>
+              </div>
+              <div style="font-size:13px; color:var(--text-muted);">
+                当前将发：<b style="color:var(--text-main);">{{ videoQueueCurrent?.title || videoQueueCurrent?.url || '队列为空' }}</b>
+                <span style="margin-left:14px;">下条预告：{{ videoQueueNext?.title || videoQueueNext?.url || '暂无' }}</span>
+              </div>
+            </div>
+          </div>
+
+          <!-- 双列工作台：左侧点赞与手动录入，右侧队列管理 -->
+          <div class="video-workspace-grid">
+            <!-- 左列：最近点赞 & 手动添加 -->
+            <div>
+              <!-- 最近点赞卡片 -->
+              <div class="panel-card">
+                <div class="panel-header">
+                  <span style="display:flex; align-items:center; gap:6px;">
+                    <svg class="lucide-icon" viewBox="0 0 24 24"><path d="M14 9V5a3 3 0 0 0-3-3l-4 9v11h11.28a2 2 0 0 0 2-1.7l1.38-9a2 2 0 0 0-2-2.3zM7 22H4a2 2 0 0 1-2-2v-7a2 2 0 0 1 2-2h3"/></svg>
+                    从最近点赞拾取 (最多 20 条)
+                  </span>
+                  <span v-if="likesAt" style="color:var(--text-muted); font-size:11px;">{{ fmt(likesAt) }}</span>
+                </div>
+                <div class="panel-body">
+                  <div style="display:flex; align-items:center; gap:8px; flex-wrap:wrap; margin-bottom:12px;">
+                    <el-button size="small" :loading="likesFetching" @click="fetchLikedVideos">读取最近点赞</el-button>
+                    <el-button
+                      v-if="likedVideos.length"
+                      size="small"
+                      type="primary"
+                      :disabled="!selectedLikedVideos.length"
+                      @click="addLikedVideos">
+                      加入发送队列{{ selectedLikedVideos.length ? ` (${selectedLikedVideos.length})` : '' }}
+                    </el-button>
+                    <el-button v-if="likedVideos.length" size="small" @click="toggleSelectAllLiked">
+                      {{ selectedLikedVideos.length === likedVideos.length ? '清空勾选' : '全选点赞' }}
+                    </el-button>
+                  </div>
+
+                  <div v-if="likedVideos.length" style="max-height:220px; overflow-y:auto; border:1px solid var(--border-color); border-radius:var(--radius-sm); padding:10px 12px; background:var(--bg-panel-sub);">
+                    <el-checkbox-group v-model="selectedLikedVideos">
+                      <el-checkbox v-for="v in likedVideos" :key="v.id" :label="v.id" class="liked-video-checkbox">
+                        <span style="font-weight:600; display:block;">{{ v.title || v.url }}</span>
+                        <span style="display:block; color:var(--text-muted); font-size:11px; margin-top:2px;">{{ v.url }}</span>
+                      </el-checkbox>
+                    </el-checkbox-group>
+                  </div>
+                  <el-empty v-else description="暂无点赞视频，请点击上方读取"></el-empty>
+                </div>
+              </div>
+
+              <!-- 手动添加链接卡片 -->
+              <div class="panel-card">
+                <div class="panel-header">
+                  <span>手动粘贴视频链接 / 分享口令</span>
+                </div>
+                <div class="panel-body">
+                  <el-input v-model="videoUrlsText" type="textarea" :rows="3" placeholder="每行一个链接，支持直接粘贴手机 App 复制的图文分享口令"></el-input>
+                  <div style="margin-top:10px; text-align:right;">
+                    <el-button size="small" type="primary" @click="addManualVideos">加入队列</el-button>
+                  </div>
+                </div>
+              </div>
             </div>
 
-            <el-divider content-position="left">手动添加链接</el-divider>
-            <el-input v-model="videoUrlsText" type="textarea" :rows="4" placeholder="每行一个抖音视频链接"></el-input>
-            <div style="margin-top:10px;"><el-button type="primary" @click="addManualVideos">加入队列</el-button></div>
-
-            <el-divider content-position="left">最近点赞</el-divider>
-            <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap; margin-bottom:10px;">
-              <el-button :loading="likesFetching" @click="fetchLikedVideos">读取最近点赞（最多 20 条）</el-button>
-              <el-button
-                v-if="likedVideos.length"
-                type="primary"
-                :disabled="!selectedLikedVideos.length"
-                @click="addLikedVideos"
-              >
-                将勾选视频加入队列{{ selectedLikedVideos.length ? ` (${selectedLikedVideos.length})` : '' }}
-              </el-button>
-              <el-button
-                v-if="likedVideos.length"
-                size="small"
-                @click="toggleSelectAllLiked"
-              >
-                {{ selectedLikedVideos.length === likedVideos.length ? '清空勾选' : '全选点赞视频' }}
-              </el-button>
-              <span v-if="likesAt" style="color:#909399; font-size:12px;">{{ fmt(likesAt) }}</span>
-              <span v-if="likesError" style="color:#f56c6c; font-size:12px;">{{ likesError }}</span>
+            <!-- 右列：发送队列管理与排序 -->
+            <div class="panel-card">
+              <div class="panel-header">
+                <span style="display:flex; align-items:center; gap:6px;">
+                  <svg class="lucide-icon" viewBox="0 0 24 24"><line x1="8" x2="21" y1="6" y2="6"/><line x1="8" x2="21" y1="12" y2="12"/><line x1="8" x2="21" y1="18" y2="18"/><line x1="3" x2="3.01" y1="6" y2="6"/><line x1="3" x2="3.01" y1="12" y2="12"/><line x1="3" x2="3.01" y1="18" y2="18"/></svg>
+                  待发队列列表 (共 {{ videoQueue.length }} 条)
+                </span>
+              </div>
+              <div class="panel-body" style="padding:0;">
+                <el-table :data="videoQueue" size="small" style="width:100%;" max-height="520">
+                  <el-table-column type="index" label="#" width="45"></el-table-column>
+                  <el-table-column label="视频标题与链接" min-width="260">
+                    <template #default="scope">
+                      <div style="font-weight:600; line-height:1.4;">{{ scope.row.title || scope.row.url }}</div>
+                      <div style="color:var(--text-muted); font-size:11px; margin-top:2px;">{{ scope.row.url }}</div>
+                    </template>
+                  </el-table-column>
+                  <el-table-column prop="source" label="来源" width="75">
+                    <template #default="scope">
+                      <span style="font-size:11px; color:var(--text-muted);">{{ scope.row.source === 'likes' ? '点赞' : '手动' }}</span>
+                    </template>
+                  </el-table-column>
+                  <el-table-column label="操作" width="70">
+                    <template #default="scope">
+                      <el-button link type="danger" size="small" @click="removeVideo(scope.row.id)">移除</el-button>
+                    </template>
+                  </el-table-column>
+                </el-table>
+              </div>
             </div>
-            <div v-if="likedVideos.length" style="max-height:240px; overflow:auto; border:1px solid #ebeef5; border-radius:6px; padding:10px 14px;">
-              <el-checkbox-group v-model="selectedLikedVideos">
-                <el-checkbox v-for="v in likedVideos" :key="v.id" :label="v.id" style="display:block; margin:6px 0;">
-                  <span>{{ v.title || v.url }}</span>
-                  <span style="display:block; color:#909399; font-size:12px; margin-top:2px;">{{ v.url }}</span>
-                </el-checkbox>
-              </el-checkbox-group>
-            </div>
-            <el-empty v-else description="暂无点赞视频，请先读取"></el-empty>
+          </div>
+        </div>
 
-            <el-divider content-position="left">发送队列</el-divider>
-            <div style="margin-bottom:10px; color:#606266; font-size:13px;">
-              当前：<b>{{ videoQueueCurrent?.title || videoQueueCurrent?.url || '暂无' }}</b>
-              <span style="margin-left:16px;">下一条：{{ videoQueueNext?.title || videoQueueNext?.url || '暂无' }}</span>
+        <!-- Tab 3: 定时与调度设置 -->
+        <div v-show="tab === 'settings'">
+          <div class="panel-card">
+            <div class="panel-header">
+              <span>每天自动定时发送设置</span>
             </div>
-            <el-table :data="videoQueue" size="small" border>
-              <el-table-column type="index" label="#" width="55"></el-table-column>
-              <el-table-column label="视频" min-width="360">
-                <template #default="scope">
-                  <div>{{ scope.row.title || scope.row.url }}</div>
-                  <div style="color:#909399; font-size:12px;">{{ scope.row.url }}</div>
-                </template>
-              </el-table-column>
-              <el-table-column prop="source" label="来源" width="90"></el-table-column>
-              <el-table-column label="操作" width="90">
-                <template #default="scope">
-                  <el-button link type="danger" @click="removeVideo(scope.row.id)">移除</el-button>
-                </template>
-              </el-table-column>
-            </el-table>
-          </el-card>
-        </el-tab-pane>
-
-        <el-tab-pane label="定时设置" name="settings">
-          <el-card shadow="never">
-            <el-form label-width="150px">
-              <el-form-item label="每天发送时间">
-                <el-input v-model="settingsForm.schedule_time" type="time" style="width:160px;"></el-input>
-              </el-form-item>
-              <el-form-item label="时间抖动窗口（分钟）">
-                <el-input-number v-model="settingsForm.jitter_minutes" :min="0" :max="240"></el-input-number>
-                <span style="margin-left:8px;color:#909399;font-size:12px;">在设定时间后 0～N 分钟内随机开始，避免每天同一秒发送</span>
-              </el-form-item>
-              <el-form-item label="好友间隔（秒）">
-                <el-input-number v-model="settingsForm.send_gap_min" :min="1" :max="300"></el-input-number>
-                <span style="margin:0 6px;">至</span>
-                <el-input-number v-model="settingsForm.send_gap_max" :min="1" :max="300"></el-input-number>
-              </el-form-item>
-              <el-form-item label="每次最多发送人数">
-                <el-input-number v-model="settingsForm.max_friends_per_run" :min="0" :max="200"></el-input-number>
-                <span style="margin-left:8px;color:#909399;font-size:12px;">0 表示不限制</span>
-              </el-form-item>
-              <el-form-item>
-                <el-button type="primary" @click="saveSettings">保存</el-button>
-              </el-form-item>
-            </el-form>
-          </el-card>
-        </el-tab-pane>
-
-        <el-tab-pane label="日志" name="logs">
-          <el-card shadow="never">
-            <div style="display:flex; gap:8px; margin-bottom:10px;">
-              <el-button size="small" @click="loadLogs">刷新日志</el-button>
-              <el-checkbox v-model="autoRefresh">自动刷新</el-checkbox>
+            <div class="panel-body" style="max-width:680px;">
+              <el-form label-width="170px">
+                <el-form-item label="每天发送时间">
+                  <el-input v-model="settingsForm.schedule_time" type="time" style="width:160px;"></el-input>
+                </el-form-item>
+                <el-form-item label="时间抖动窗口（分钟）">
+                  <el-input-number v-model="settingsForm.jitter_minutes" :min="0" :max="240"></el-input-number>
+                  <span style="margin-left:8px;color:var(--text-muted);font-size:12px;">在设定时间后 0～N 分钟内随机开始，避免每天同一秒发送</span>
+                </el-form-item>
+                <el-form-item label="好友间隔区间（秒）">
+                  <el-input-number v-model="settingsForm.send_gap_min" :min="1" :max="300"></el-input-number>
+                  <span style="margin:0 6px;">至</span>
+                  <el-input-number v-model="settingsForm.send_gap_max" :min="1" :max="300"></el-input-number>
+                </el-form-item>
+                <el-form-item label="每次最多发送人数">
+                  <el-input-number v-model="settingsForm.max_friends_per_run" :min="0" :max="200"></el-input-number>
+                  <span style="margin-left:8px;color:var(--text-muted);font-size:12px;">0 表示不限制，按名单全部发送</span>
+                </el-form-item>
+                <el-form-item>
+                  <el-button type="primary" @click="saveSettings">保存调度设置</el-button>
+                </el-form-item>
+              </el-form>
             </div>
-            <pre class="log-pre">{{ logs || '暂无日志' }}</pre>
-          </el-card>
-        </el-tab-pane>
-      </el-tabs>
+          </div>
+        </div>
+
+        <!-- Tab 4: 控制台日志 -->
+        <div v-show="tab === 'logs'">
+          <div class="terminal-window">
+            <div class="terminal-bar">
+              <div class="terminal-dots">
+                <div class="t-dot t-dot-red"></div>
+                <div class="t-dot t-dot-yellow"></div>
+                <div class="t-dot t-dot-green"></div>
+                <span style="color:#64748B; font-size:11px; margin-left:8px; font-family:var(--font-mono);">app.log · 实时控制台输出</span>
+              </div>
+              <div style="display:flex; align-items:center; gap:12px;">
+                <el-checkbox v-model="autoRefresh" style="color:#94A3B8;">自动刷新</el-checkbox>
+                <el-button size="small" @click="loadLogs">刷新日志</el-button>
+              </div>
+            </div>
+            <pre class="terminal-body">{{ logs || '暂无日志输出…' }}</pre>
+          </div>
+        </div>
+      </section>
     </div>
 
-    <el-dialog v-model="tokenDialog" title="访问令牌" width="360px" :close-on-click-modal="false" :show-close="false">
-      <p style="margin-top:0;color:#606266;font-size:13px;">请输入部署时生成的访问令牌（保存在服务器 .env 文件中）。</p>
-      <el-input v-model="tokenInput" placeholder="访问令牌" show-password @keyup.enter="saveToken"></el-input>
+    <!-- 访问令牌弹窗 -->
+    <el-dialog v-model="tokenDialog" title="访问令牌设置" width="420px">
+      <p style="font-size:13px; color:var(--text-muted); margin-bottom:12px;">
+        请输入部署时生成的访问令牌（保存在服务器 .env 文件中的 AUTH_TOKEN）。
+      </p>
+      <el-input v-model="tokenInput" placeholder="输入访问令牌" type="password" show-password></el-input>
       <template #footer>
-        <el-button type="primary" @click="saveToken">确定</el-button>
+        <el-button @click="tokenDialog = false">取消</el-button>
+        <el-button type="primary" @click="saveToken">确定保存</el-button>
       </template>
     </el-dialog>
   </div>
@@ -247,27 +857,92 @@
   <script src="/static/vendor/element-plus.full.min.js"></script>
   <script src="/static/vendor/axios.min.js"></script>
   <script>
-    const { createApp, ref, reactive, computed, onMounted, onUnmounted, nextTick } = Vue;
+    const { createApp, ref, reactive, computed, onMounted, onUnmounted } = Vue;
 
     const app = createApp({
       setup() {
-        const tab = ref('overview');
-        const token = ref(localStorage.getItem('ds_token') || '');
-        const tokenInput = ref('');
+        const tab = ref('friends');
         const tokenDialog = ref(false);
-        const status = reactive({ state_file_exists: false, session_status: 'unknown', running: false, last_run: null, next_run: null, history_count: 0, auth_required: true });
-        const config = reactive({ schedule_time: '21:00', jitter_minutes: 30, send_gap_min: 6, send_gap_max: 12, max_friends_per_run: 20, friends: [], messages: [], video_mode_enabled: false, video_queue: [] });
-        const settingsForm = reactive({ schedule_time: '21:00', jitter_minutes: 30, send_gap_min: 6, send_gap_max: 12, max_friends_per_run: 20 });
+        const tokenInput = ref('');
+        const authToken = ref(localStorage.getItem('douyin_spark_token') || '');
+        const refreshing = ref(false);
+        const isDark = ref(localStorage.getItem('douyin_spark_theme') === 'dark');
+
+        // 初始化深色模式
+        if (isDark.value) {
+          document.documentElement.classList.add('dark');
+        }
+
+        function toggleDarkMode() {
+          isDark.value = !isDark.value;
+          if (isDark.value) {
+            document.documentElement.classList.add('dark');
+            localStorage.setItem('douyin_spark_theme', 'dark');
+          } else {
+            document.documentElement.classList.remove('dark');
+            localStorage.setItem('douyin_spark_theme', 'light');
+          }
+        }
+
+        const api = axios.create({ baseURL: '/api' });
+        api.interceptors.request.use((cfg) => {
+          if (authToken.value) cfg.headers['X-Auth-Token'] = authToken.value;
+          return cfg;
+        });
+        api.interceptors.response.use(
+          (r) => r,
+          (err) => {
+            if (err.response?.status === 401) {
+              showTokenDialog();
+            }
+            return Promise.reject(err);
+          }
+        );
+
+        const status = reactive({
+          state_file_exists: false,
+          session_status: 'unknown',
+          running: false,
+          last_run: null,
+          next_run: null,
+          history_count: 0,
+        });
+
+        const config = reactive({
+          schedule_time: '21:00',
+          jitter_minutes: 30,
+          send_gap_min: 6,
+          send_gap_max: 12,
+          max_friends_per_run: 20,
+          friends: [],
+          messages: [],
+          video_mode_enabled: false,
+          video_queue: [],
+        });
+
+        const settingsForm = reactive({
+          schedule_time: '21:00',
+          jitter_minutes: 30,
+          send_gap_min: 6,
+          send_gap_max: 12,
+          max_friends_per_run: 20,
+        });
+
         const friendsText = ref('');
         const messagesText = ref('');
         const logs = ref('');
-        const autoRefresh = ref(false);
+        const autoRefresh = ref(true);
         const uploadFile = ref(null);
+        let logTimer = null;
+
         const contacts = ref([]);
-        const contactsAt = ref('');
-        const contactsError = ref('');
+        const contactsAt = ref(null);
+        const contactsError = ref(null);
         const contactsFetching = ref(false);
         const selectedFriends = ref([]);
+        const onlySparkFriends = ref(false);
+        const friendSearchKeyword = ref('');
+
         const videoModeEnabled = ref(false);
         const videoUrlsText = ref('');
         const videoQueue = ref([]);
@@ -275,56 +950,109 @@
         const videoQueueNext = ref(null);
         const likedVideos = ref([]);
         const selectedLikedVideos = ref([]);
-        const likesAt = ref('');
-        const likesError = ref('');
+        const likesAt = ref(null);
+        const likesError = ref(null);
         const likesFetching = ref(false);
-        let logTimer = null;
 
-        const api = axios.create({ baseURL: '/api', timeout: 900000 });
-        api.interceptors.request.use((cfg) => {
-          if (token.value) cfg.headers['X-Auth-Token'] = token.value;
-          return cfg;
+        const sparkFriendsCount = computed(() => {
+          return contacts.value.filter((c) => !!(c.spark_days || c.spark_state)).length;
         });
-        api.interceptors.response.use(
-          (r) => r,
-          (err) => {
-            if (err.response && err.response.status === 401) { tokenDialog.value = true; }
-            return Promise.reject(err);
-          }
-        );
 
-        function showTokenDialog() { tokenInput.value = token.value; tokenDialog.value = true; }
-        function saveToken() {
-          token.value = tokenInput.value.trim();
-          localStorage.setItem('ds_token', token.value);
-          tokenDialog.value = false;
-          loadAll();
+        const filteredContacts = computed(() => {
+          let list = contacts.value;
+          if (onlySparkFriends.value) {
+            list = list.filter((c) => !!(c.spark_days || c.spark_state));
+          }
+          const kw = friendSearchKeyword.value.trim().toLowerCase();
+          if (kw) {
+            list = list.filter((c) => (c.name || '').toLowerCase().includes(kw));
+          }
+          return list;
+        });
+
+        function isFriendSelected(name) {
+          return selectedFriends.value.includes(name);
+        }
+
+        function toggleFriendSelection(name) {
+          const idx = selectedFriends.value.indexOf(name);
+          if (idx >= 0) {
+            selectedFriends.value.splice(idx, 1);
+          } else {
+            selectedFriends.value.push(name);
+          }
+        }
+
+        function selectAllSparkFriends() {
+          const sparkNames = contacts.value
+            .filter((c) => !!(c.spark_days || c.spark_state))
+            .map((c) => c.name);
+          selectedFriends.value = Array.from(new Set(selectedFriends.value.concat(sparkNames)));
+          ElementPlus.ElMessage.success(`已勾选 ${selectedFriends.value.length} 位好友`);
+        }
+
+        function clearAllSelection() {
+          selectedFriends.value = [];
+        }
+
+        function applySelection() {
+          if (!selectedFriends.value.length) {
+            ElementPlus.ElMessage.warning('请先勾选好友');
+            return;
+          }
+          const existing = friendsText.value
+            .split('\n')
+            .map((s) => s.trim())
+            .filter(Boolean);
+          const merged = Array.from(new Set(existing.concat(selectedFriends.value)));
+          friendsText.value = merged.join('\n');
+          ElementPlus.ElMessage.success(`已填入 ${merged.length} 个好友到名单`);
         }
 
         function fmt(iso) {
           if (!iso) return '';
-          const d = new Date(iso);
-          return isNaN(d) ? iso : d.toLocaleString('zh-CN', { hour12: false });
+          try {
+            const d = new Date(iso);
+            return d.toLocaleString('zh-CN', { hour12: false });
+          } catch {
+            return iso;
+          }
+        }
+
+        function fmtShort(iso) {
+          if (!iso) return '';
+          try {
+            const d = new Date(iso);
+            const hh = String(d.getHours()).padStart(2, '0');
+            const mm = String(d.getMinutes()).padStart(2, '0');
+            return `${hh}:${mm}`;
+          } catch {
+            return iso;
+          }
         }
 
         async function loadStatus() {
           try {
             const r = await api.get('/status');
             Object.assign(status, r.data);
-            if (r.data.auth_required && !token.value) tokenDialog.value = true;
-          } catch (e) { /* 401 handled by interceptor */ }
+          } catch (e) {}
         }
+
         async function loadConfig() {
           try {
             const r = await api.get('/config');
             Object.assign(config, r.data);
-            Object.assign(settingsForm, r.data);
             friendsText.value = (r.data.friends || []).join('\n');
             messagesText.value = (r.data.messages || []).join('\n');
-            selectedFriends.value = (r.data.friends || []).slice();
+            settingsForm.schedule_time = r.data.schedule_time || '21:00';
+            settingsForm.jitter_minutes = r.data.jitter_minutes ?? 30;
+            settingsForm.send_gap_min = r.data.send_gap_min ?? 6;
+            settingsForm.send_gap_max = r.data.send_gap_max ?? 12;
+            settingsForm.max_friends_per_run = r.data.max_friends_per_run ?? 20;
             videoModeEnabled.value = !!r.data.video_mode_enabled;
-          } catch (e) { /* handled */ }
+          } catch (e) {}
         }
+
         async function loadVideoQueue() {
           try {
             const r = await api.get('/videos/queue');
@@ -332,118 +1060,105 @@
             videoQueueCurrent.value = r.data.current || null;
             videoQueueNext.value = r.data.next || null;
             videoModeEnabled.value = !!r.data.enabled;
-          } catch (e) { /* handled */ }
+          } catch (e) {}
         }
+
         async function loadLikedVideos() {
           try {
             const r = await api.get('/videos/likes');
             likedVideos.value = r.data.videos || [];
-            likesAt.value = r.data.at || '';
-            likesError.value = r.data.error || '';
+            likesAt.value = r.data.at || null;
+            likesError.value = r.data.error || null;
             likesFetching.value = !!r.data.fetching;
-          } catch (e) { /* handled */ }
+          } catch (e) {}
         }
+
         async function loadContacts() {
           try {
             const r = await api.get('/contacts');
             contacts.value = r.data.contacts || [];
-            contactsAt.value = r.data.contacts_at || '';
-            contactsError.value = r.data.contacts_error || '';
+            contactsAt.value = r.data.contacts_at || null;
+            contactsError.value = r.data.contacts_error || null;
             contactsFetching.value = !!r.data.fetching;
-          } catch (e) { /* handled */ }
-        }
-        async function fetchContacts() {
-          try {
-            await api.post('/contacts/fetch');
-            contactsFetching.value = true;
-            ElementPlus.ElMessage.info('正在读取聊天列表，可能需要半分钟左右…');
-            for (let i = 0; i < 80; i++) {
-              await new Promise((r) => setTimeout(r, 3000));
-              await loadContacts();
-              if (!contactsFetching.value) break;
-            }
-          } catch (e) {
-            ElementPlus.ElMessage.error(e.response?.data?.detail || '获取失败');
-          }
-        }
-        function applySelection() {
-          friendsText.value = selectedFriends.value.join('\n');
-          ElementPlus.ElMessage.success('已把勾选结果写入名单，记得点「保存」');
-        }
-        const onlySparkFriends = ref(false);
-        const sparkFriendsCount = computed(() => {
-          return (contacts.value || []).filter((c) => c.streak || c.has_spark).length;
-        });
-        const filteredContacts = computed(() => {
-          if (!onlySparkFriends.value) return contacts.value || [];
-          return (contacts.value || []).filter((c) => c.streak || c.has_spark);
-        });
-        function selectAllSparkFriends() {
-          const sparks = (contacts.value || []).filter((c) => c.streak || c.has_spark).map((c) => c.name);
-          const current = new Set(selectedFriends.value || []);
-          sparks.forEach((name) => current.add(name));
-          selectedFriends.value = Array.from(current);
-          ElementPlus.ElMessage.success(`已勾选 ${sparks.length} 位火花好友`);
-        }
-        function clearAllSelection() {
-          selectedFriends.value = [];
-        }
-        async function loadLogs() {
-          try {
-            const r = await api.get('/logs');
-            logs.value = r.data.logs;
-          } catch (e) { /* handled */ }
-        }
-        async function loadAll() {
-          await loadStatus();
-          await loadConfig();
-          await loadContacts();
-          await loadVideoQueue();
-          await loadLikedVideos();
-          await loadLogs();
+          } catch (e) {}
         }
 
-        function buildConfigPayload(extra) {
-          return { config: Object.assign({}, config, settingsForm, {
-            friends: friendsText.value.split('\n').map((s) => s.trim()).filter(Boolean),
-            messages: messagesText.value.split('\n').map((s) => s.trim()).filter(Boolean),
-          }, extra || {}) };
+        async function loadLogs() {
+          try {
+            const r = await api.get('/logs?n=600');
+            logs.value = r.data.logs || '';
+          } catch (e) {}
         }
+
+        async function loadAll() {
+          await Promise.all([loadStatus(), loadConfig(), loadContacts(), loadVideoQueue(), loadLikedVideos(), loadLogs()]);
+        }
+
+        async function handleManualRefresh() {
+          refreshing.value = true;
+          try {
+            await loadAll();
+            ElementPlus.ElMessage.success('已刷新最新状态');
+          } finally {
+            refreshing.value = false;
+          }
+        }
+
+        function buildConfigPayload(extra = {}) {
+          return {
+            config: {
+              schedule_time: settingsForm.schedule_time,
+              jitter_minutes: settingsForm.jitter_minutes,
+              send_gap_min: settingsForm.send_gap_min,
+              send_gap_max: settingsForm.send_gap_max,
+              max_friends_per_run: settingsForm.max_friends_per_run,
+              friends: friendsText.value.split('\n').map((s) => s.trim()).filter(Boolean),
+              messages: messagesText.value.split('\n').map((s) => s.trim()).filter(Boolean),
+              video_mode_enabled: videoModeEnabled.value,
+              ...extra,
+            },
+          };
+        }
+
         async function saveFriends() {
           try {
             await api.put('/config', buildConfigPayload());
             await loadConfig();
-            ElementPlus.ElMessage.success('好友与消息已保存');
+            ElementPlus.ElMessage.success('好友名单与文案已保存');
           } catch (e) {
             ElementPlus.ElMessage.error(e.response?.data?.detail || '保存失败');
           }
         }
+
         async function saveSettings() {
           try {
-            await api.put('/config', buildConfigPayload({ schedule_time: settingsForm.schedule_time }));
+            await api.put('/config', buildConfigPayload());
             await loadConfig();
             await loadStatus();
-            ElementPlus.ElMessage.success('定时设置已保存');
+            ElementPlus.ElMessage.success('调度设置已保存');
           } catch (e) {
             ElementPlus.ElMessage.error(e.response?.data?.detail || '保存失败');
           }
         }
+
         async function saveVideoMode() {
           try {
             await api.put('/config', buildConfigPayload({ video_mode_enabled: videoModeEnabled.value }));
             await loadVideoQueue();
-            ElementPlus.ElMessage.success(videoModeEnabled.value ? '视频模式已启用' : '视频模式已关闭');
+            ElementPlus.ElMessage.success(videoModeEnabled.value ? '已开启视频转发模式' : '已关闭视频模式');
           } catch (e) {
             videoModeEnabled.value = !videoModeEnabled.value;
             ElementPlus.ElMessage.error(e.response?.data?.detail || '保存失败');
           }
         }
+
         async function saveVideoQueue(nextQueue) {
           const r = await api.put('/videos/queue', { videos: nextQueue });
           videoQueue.value = r.data.videos || [];
           videoQueueCurrent.value = r.data.current || null;
           videoQueueNext.value = r.data.next || null;
         }
+
         async function addManualVideos() {
           const urls = videoUrlsText.value.split('\n').map((s) => s.trim()).filter(Boolean);
           if (!urls.length) return;
@@ -455,6 +1170,7 @@
             ElementPlus.ElMessage.success(`已加入 ${additions.length} 条视频`);
           } catch (e) { ElementPlus.ElMessage.error(e.response?.data?.detail || '加入失败'); }
         }
+
         async function addLikedVideos() {
           const selected = new Set(selectedLikedVideos.value);
           const existing = new Set(videoQueue.value.map((v) => v.url));
@@ -466,6 +1182,7 @@
             ElementPlus.ElMessage.success(`已加入 ${additions.length} 条点赞视频`);
           } catch (e) { ElementPlus.ElMessage.error(e.response?.data?.detail || '加入失败'); }
         }
+
         function toggleSelectAllLiked() {
           if (selectedLikedVideos.value.length === likedVideos.value.length) {
             selectedLikedVideos.value = [];
@@ -473,11 +1190,13 @@
             selectedLikedVideos.value = likedVideos.value.map((v) => v.id);
           }
         }
+
         async function removeVideo(id) {
           try {
             await saveVideoQueue(videoQueue.value.filter((v) => v.id !== id));
           } catch (e) { ElementPlus.ElMessage.error(e.response?.data?.detail || '移除失败'); }
         }
+
         async function fetchLikedVideos() {
           try {
             await api.post('/videos/likes/fetch');
@@ -489,6 +1208,58 @@
             }
           } catch (e) { ElementPlus.ElMessage.error(e.response?.data?.detail || '读取失败'); }
         }
+
+        async function fetchContacts() {
+          try {
+            await api.post('/contacts/fetch');
+            contactsFetching.value = true;
+            ElementPlus.ElMessage.info('已触发后台获取好友，请稍候…');
+            for (let i = 0; i < 120; i++) {
+              await new Promise((r) => setTimeout(r, 2500));
+              await loadContacts();
+              if (!contactsFetching.value) break;
+            }
+            ElementPlus.ElMessage.success('好友列表更新完成');
+          } catch (e) {
+            ElementPlus.ElMessage.error(e.response?.data?.detail || '获取好友失败');
+          }
+        }
+
+        async function handlePrimaryRun() {
+          if (videoModeEnabled.value) {
+            if (!videoQueue.value.length) {
+              ElementPlus.ElMessage.warning('视频队列为空，请先添加视频');
+              return;
+            }
+            await triggerVideoRun(false);
+          } else {
+            await triggerRun(false);
+          }
+        }
+
+        async function handleDryRun() {
+          if (videoModeEnabled.value) {
+            if (!videoQueue.value.length) {
+              ElementPlus.ElMessage.warning('视频队列为空，请先添加视频');
+              return;
+            }
+            await triggerVideoRun(true);
+          } else {
+            await triggerRun(true);
+          }
+        }
+
+        async function triggerRun(dry) {
+          try {
+            await api.post('/run', { dry });
+            ElementPlus.ElMessage.info(dry ? '干跑测试已启动' : '发送任务已启动');
+            await loadStatus();
+            await waitForRunFinish(1200);
+            await loadStatus();
+            await loadLogs();
+          } catch (e) { ElementPlus.ElMessage.error(e.response?.data?.detail || '启动失败'); }
+        }
+
         async function triggerVideoRun(dry) {
           try {
             await api.post('/videos/run', { dry });
@@ -503,40 +1274,38 @@
         async function waitForRunFinish(maxSeconds) {
           const start = Date.now();
           while (Date.now() - start < maxSeconds * 1000) {
-            await new Promise((r) => setTimeout(r, 5000));
+            await new Promise((r) => setTimeout(r, 4000));
             await loadStatus();
             if (!status.running) return;
           }
-          ElementPlus.ElMessage.warning('等待超时，任务可能仍在后台运行');
-        }
-        async function triggerRun(dry) {
-          try {
-            const r = await api.post('/run', { dry });
-            if (r.data.started) {
-              ElementPlus.ElMessage.info(dry ? '干跑测试已启动' : '发送任务已启动');
-              await loadStatus();
-              await waitForRunFinish(1200);
-              await loadLogs();
-            }
-          } catch (e) {
-            ElementPlus.ElMessage.error(e.response?.data?.detail || '启动失败');
-          }
         }
 
-        function onFileChange(file) { uploadFile.value = file.raw || null; }
+        function onFileChange(file) { uploadFile.value = file.raw; }
         function onFileRemove() { uploadFile.value = null; }
+
         async function uploadState() {
           if (!uploadFile.value) return;
+          const fd = new FormData();
+          fd.append('file', uploadFile.value);
           try {
-            const fd = new FormData();
-            fd.append('file', uploadFile.value);
-            const r = await api.post('/upload-state', fd);
-            ElementPlus.ElMessage.success('登录态已上传（' + r.data.size + ' 字节）');
+            await api.post('/upload-state', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+            ElementPlus.ElMessage.success('登录态上传成功');
             uploadFile.value = null;
             await loadStatus();
-          } catch (e) {
-            ElementPlus.ElMessage.error(e.response?.data?.detail || '上传失败');
-          }
+          } catch (e) { ElementPlus.ElMessage.error(e.response?.data?.detail || '上传失败'); }
+        }
+
+        function showTokenDialog() {
+          tokenInput.value = authToken.value;
+          tokenDialog.value = true;
+        }
+
+        function saveToken() {
+          authToken.value = tokenInput.value.trim();
+          localStorage.setItem('douyin_spark_token', authToken.value);
+          tokenDialog.value = false;
+          ElementPlus.ElMessage.success('令牌已保存');
+          loadAll();
         }
 
         onMounted(async () => {
@@ -544,20 +1313,21 @@
           logTimer = setInterval(() => {
             loadStatus();
             if (autoRefresh.value) loadLogs();
-          }, 20000);
+          }, 15000);
         });
         onUnmounted(() => { if (logTimer) clearInterval(logTimer); });
 
         return {
-          tab, status, settingsForm, friendsText, messagesText, logs, autoRefresh, uploadFile,
+          tab, status, config, settingsForm, friendsText, messagesText, logs, autoRefresh, uploadFile,
           contacts, contactsAt, contactsError, contactsFetching, selectedFriends,
-          onlySparkFriends, sparkFriendsCount, filteredContacts, selectAllSparkFriends, clearAllSelection,
+          onlySparkFriends, sparkFriendsCount, filteredContacts, friendSearchKeyword,
+          isFriendSelected, toggleFriendSelection, selectAllSparkFriends, clearAllSelection, applySelection,
           videoModeEnabled, videoUrlsText, videoQueue, videoQueueCurrent, videoQueueNext,
           likedVideos, selectedLikedVideos, likesAt, likesError, likesFetching,
-          tokenDialog, tokenInput,
-          fmt, loadAll, loadLogs, loadContacts, fetchContacts, applySelection,
+          tokenDialog, tokenInput, isDark, refreshing,
+          fmt, fmtShort, loadAll, loadLogs, loadContacts, fetchContacts, handleManualRefresh, toggleDarkMode,
           saveFriends, saveSettings, triggerRun, saveVideoMode, addManualVideos, addLikedVideos,
-          toggleSelectAllLiked, removeVideo, fetchLikedVideos, triggerVideoRun,
+          toggleSelectAllLiked, removeVideo, fetchLikedVideos, triggerVideoRun, handlePrimaryRun, handleDryRun,
           onFileChange, onFileRemove, uploadState, showTokenDialog, saveToken,
         };
       },
