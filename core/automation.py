@@ -102,7 +102,10 @@ def _find_contact(page, name: str):
     exact = page.get_by_text(name, exact=True)
     if exact.count():
         return exact.first
-    return page.locator(".conversationConversationItemtitle").filter(has_text=name).first
+    by_class = page.locator(".conversationConversationItemtitle, [class*='Itemtitle' i], [class*='ItemTitle' i]").filter(has_text=name)
+    if by_class.count():
+        return by_class.first
+    return page.locator(".conversationConversationListwrapper, .componentsLeftPanelboxList").get_by_text(name).first
 
 
 def verify_in_conversation(page, name: str) -> bool:
@@ -430,20 +433,77 @@ def fetch_chat_contacts() -> dict:
                 result["error"] = why
                 return result
 
-            # 等待联系人列表出现，未出现时尝试刷新页面重试
+            # 智能等待联系人列表就绪（避免粗暴 reload 掐断 WebSocket 握手）
+            check_list_js = """
+                () => {
+                    const selectors = [
+                        '.conversationConversationItemtitle',
+                        '[class*="Itemtitle" i]',
+                        '[class*="ItemTitle" i]',
+                        '[class*="conversationConversationItem"]',
+                        '[class*="conversationItem" i]',
+                        '.conversationConversationListwrapper > div',
+                        '.componentsLeftPanelboxList [role="listitem"]'
+                    ];
+                    let count = 0;
+                    for (const sel of selectors) {
+                        const found = document.querySelectorAll(sel);
+                        if (found.length > 0) {
+                            count = found.length;
+                            break;
+                        }
+                    }
+                    const emptyWrapper = document.querySelector('.LeftPanelEmptywrapper, [class*="Emptywrapper" i]');
+                    const emptyText = emptyWrapper ? (emptyWrapper.innerText || '').trim() : '';
+                    const hasEmpty = Boolean(emptyWrapper) || emptyText.includes('暂无会话');
+                    const hasSearch = Boolean(document.querySelector('input[placeholder*="搜索"]'));
+
+                    return { count, hasEmpty, hasSearch };
+                }
+            """
+
             list_ready = False
-            for attempt in range(3):
-                try:
-                    page.wait_for_selector(".conversationConversationItemtitle", timeout=30000)
-                    list_ready = True
+            reloaded_once = False
+            wait_start = time.time()
+            max_wait_seconds = 65
+
+            while time.time() - wait_start < max_wait_seconds:
+                # 检查风控提示
+                rl = detect_rate_limit(page)
+                if rl:
+                    logger.warning("等待联系人时检测到风控提示: %s", rl)
                     break
-                except Exception:
-                    logger.info("第 %s 次等待联系人列表超时，刷新页面重试", attempt + 1)
+
+                info = page.evaluate(check_list_js) or {}
+                cnt = info.get("count", 0)
+                has_empty = info.get("hasEmpty", False)
+
+                if cnt > 0:
+                    list_ready = True
+                    logger.info("已检测到联系人列表就绪，共发现至少 %s 个候选元素", cnt)
+                    break
+
+                elapsed = int(time.time() - wait_start)
+                if elapsed in (10, 22, 35):
+                    # 适时轻触页面激活前端 IM SDK 数据同步（避免空等）
                     try:
-                        page.reload(wait_until="domcontentloaded", timeout=90000)
-                        page.wait_for_timeout(10000)
+                        page.mouse.move(200, 300)
+                        page.mouse.wheel(0, 80)
                     except Exception:
                         pass
+
+                # 若页面超过 40 秒依然处于空态且未重试过，执行一次温和刷新重试
+                if elapsed > 40 and has_empty and not reloaded_once:
+                    logger.info("页面处于加载空态超过 40 秒，执行一次温和刷新重连 IM...")
+                    reloaded_once = True
+                    try:
+                        page.reload(wait_until="domcontentloaded", timeout=60000)
+                        page.wait_for_timeout(8000)
+                    except Exception:
+                        pass
+                    continue
+
+                page.wait_for_timeout(2000)
 
             if not list_ready:
                 _screenshot(page)
@@ -451,19 +511,46 @@ def fetch_chat_contacts() -> dict:
                 if rl:
                     result["error"] = f"触发了安全风控拦截（{rl}），页面未正常渲染会话列表"
                 else:
-                    result["error"] = "等待联系人列表超时（页面未渲染会话列表，可能出现滑块验证码、网络卡顿或登录态已失效）"
+                    result["error"] = "等待联系人列表超时（请检查登录态有效性或云服务器到抖音聊天服务的长连接状况）"
                 return result
 
             # 稍微等待首屏卡片渲染完全
-            page.wait_for_timeout(3000)
+            page.wait_for_timeout(2000)
 
             extract_js = """
                 () => {
                     const out = [];
-                    document.querySelectorAll('.conversationConversationItemtitle').forEach(t => {
-                        const name = (t.textContent || '').trim();
-                        if (!name) return;
+                    // 严格匹配标题元素，排除外层 wrapper
+                    let titles = Array.from(document.querySelectorAll(
+                        '.conversationConversationItemtitle, [class*="Itemtitle" i], [class*="ItemTitle" i], [class*="item_title" i], [class*="itemTitle" i]'
+                    )).filter(el => {
+                        const cls = el.className || '';
+                        return typeof cls === 'string' && !cls.includes('wrapper') && !cls.includes('Wrapper');
+                    });
 
+                    // 如果类名未命中，从列表容器内部兜底遍历
+                    if (titles.length === 0) {
+                        const wrapper = document.querySelector('.conversationConversationListwrapper, .componentsLeftPanelboxList');
+                        if (wrapper) {
+                            const items = wrapper.querySelectorAll('div[role="listitem"], div[class*="Itemwrapper" i]');
+                            items.forEach(row => {
+                                const h = row.querySelector('[class*="title" i]') || row.querySelector('span, p');
+                                if (h && (h.textContent || '').trim()) {
+                                    titles.push(h);
+                                }
+                            });
+                        }
+                    }
+
+                    const seenNames = new Set();
+                    titles.forEach(t => {
+                        let name = (t.textContent || '').trim().split('\\n')[0].trim();
+                        // 过滤干扰词
+                        if (!name || name === '暂无会话' || name === '搜索' || name === '未找到相关结果' || name.length > 50) return;
+                        if (seenNames.has(name)) return;
+                        seenNames.add(name);
+
+                        // 寻找所属卡片容器
                         let cur = t;
                         for (let i = 0; i < 6; i++) {
                             if (cur.parentElement && cur.parentElement.tagName !== 'BODY') {
@@ -476,42 +563,46 @@ def fetch_chat_contacts() -> dict:
                             }
                         }
 
-                        const wrap = t.parentElement;
                         let streakText = '';
                         let hasFlame = false;
 
-                        // 检查火焰图片
-                        const imgs = (cur || wrap).querySelectorAll('img');
+                        // 仅在当前卡片容器内部寻找火焰/火花图片或 svg
+                        const imgs = cur ? cur.querySelectorAll('img, svg') : [];
                         imgs.forEach(img => {
-                            if (img.src && (img.src.includes('flame') || img.src.includes('streak'))) {
+                            const src = img.getAttribute('src') || '';
+                            const cls = (img.className && typeof img.className === 'string') ? img.className : '';
+                            if (src.includes('flame') || src.includes('streak') || src.includes('chat_days') ||
+                                cls.includes('flame') || cls.includes('streak')) {
                                 hasFlame = true;
                             }
                         });
 
-                        // 1. 标准 normalText 选择器
-                        const s = wrap ? wrap.querySelector('.commonStreaknormalText') : null;
+                        // 标准及备选 streak 文本类名
+                        const s = cur ? cur.querySelector('.commonStreaknormalText, [class*="Streak" i], [class*="streak" i]') : null;
                         if (s && (s.textContent || '').trim()) {
                             streakText = s.textContent.trim();
-                        } else if (cur) {
-                            // 2. 备选 streak 文本类名
-                            const altS = cur.querySelector('[class*="streak" i], [class*="Streak" i]');
-                            if (altS && (altS.textContent || '').trim()) {
-                                streakText = altS.textContent.trim();
+                            if (/^\\d+$/.test(streakText)) {
+                                streakText += '天';
                             }
                         }
 
-                        // 3. 卡片文本正则匹配重燃或临界消失提醒
+                        // 卡片整体文本智能正则：提取重燃/消失提醒/火花天数
                         if (!streakText && cur) {
                             const txt = cur.innerText || '';
                             const m = txt.match(/重燃中\\s*\\d+\\/\\d+|\\d+\\s*天后消失/);
                             if (m) {
                                 streakText = m[0].trim();
+                            } else if (hasFlame) {
+                                const numMatch = txt.match(/(?:\\b|\\s)(\\d{1,4})(?:\\s*天|\\s*🔥|\\s*$)/);
+                                if (numMatch) {
+                                    streakText = numMatch[1].trim() + '天';
+                                }
                             }
                         }
 
-                        // 4. 有火焰图片但未提取到具体文本时兜底
+                        // 有火焰图标但未能提取到具体天数时兜底标为火花
                         if (!streakText && hasFlame) {
-                            streakText = '待续火花';
+                            streakText = '火花';
                         }
 
                         out.push({
@@ -532,13 +623,17 @@ def fetch_chat_contacts() -> dict:
                 data = page.evaluate(extract_js) or []
                 new_items_count = 0
 
+                # 初始防空保护：如果第一轮没有抓到，等待 2.5 秒重试一次
+                if scroll_idx == 0 and len(data) == 0:
+                    page.wait_for_timeout(2500)
+                    data = page.evaluate(extract_js) or []
+
                 for item in data:
                     name = item["name"]
                     if name not in contacts_map:
                         contacts_map[name] = item
                         new_items_count += 1
                     else:
-                        # 若已有此联系人但原先 streak 为空、新抓到了火花，及时更新补全
                         if not contacts_map[name].get("streak") and item.get("streak"):
                             contacts_map[name]["streak"] = item["streak"]
                             contacts_map[name]["has_spark"] = True
@@ -549,14 +644,14 @@ def fetch_chat_contacts() -> dict:
                     consecutive_no_new = 0
                 else:
                     consecutive_no_new += 1
-                    # 连续 10 次未发现新联系人，判定已真正滚动至底部
-                    if consecutive_no_new >= 10:
+                    # 连续 8 次滚动未发现新联系人，判定已真正滚动至底部
+                    if consecutive_no_new >= 8 and len(contacts_map) > 0:
                         break
 
                 # 驱动列表滚动：鼠标滚轮
                 try:
                     page.mouse.move(200, 350)
-                    page.mouse.wheel(0, 1000)
+                    page.mouse.wheel(0, 900)
                 except Exception:
                     pass
 
@@ -565,11 +660,14 @@ def fetch_chat_contacts() -> dict:
                     try:
                         page.evaluate("""
                             () => {
-                                const titles = document.querySelectorAll('.conversationConversationItemtitle');
+                                const titles = document.querySelectorAll(
+                                    '.conversationConversationItemtitle, [class*="Itemtitle" i], [class*="ItemTitle" i]'
+                                );
                                 if (titles.length > 0) {
                                     titles[titles.length - 1].scrollIntoView({ behavior: 'auto', block: 'end' });
                                 }
                                 const container = document.querySelector('.conversationConversationListwrapper') || 
+                                                  document.querySelector('.componentsLeftPanelboxList') ||
                                                   document.querySelector('#imSaasContainerId');
                                 if (container) {
                                     container.dispatchEvent(new WheelEvent('wheel', { deltaY: 1000, bubbles: true }));
@@ -578,9 +676,10 @@ def fetch_chat_contacts() -> dict:
                         """)
                     except Exception:
                         pass
-                    page.wait_for_timeout(2500)
+                    page.wait_for_timeout(2000)
                 else:
-                    page.wait_for_timeout(1200)
+                    page.wait_for_timeout(1000)
+
 
             # 整理联系人列表：火花好友优先置顶排序
             def _sort_key(c: dict) -> tuple[int, int, str]:
