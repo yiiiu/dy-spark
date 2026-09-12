@@ -191,10 +191,14 @@ def _wait_input_cleared(input_box, msg_text: str, wait: float = 8) -> bool:
 
 def send_to_contact(page, name: str, msg_text: str, dry_run: bool) -> tuple[bool, str]:
     switched = False
-    for attempt in range(5):
+    for attempt in range(10):
         try:
             target = _find_contact(page, name)
             if target.count():
+                try:
+                    target.scroll_into_view_if_needed(timeout=2000)
+                except Exception:
+                    pass
                 target.click(force=True, timeout=10000)
                 time.sleep(random.uniform(2, 4))
                 if verify_in_conversation(page, name):
@@ -204,7 +208,7 @@ def send_to_contact(page, name: str, msg_text: str, dry_run: bool) -> tuple[bool
                 # 目标可能因列表懒加载尚未渲染，滚动侧边栏继续找
                 try:
                     page.mouse.move(200, 350)
-                    page.mouse.wheel(0, 600)
+                    page.mouse.wheel(0, 800)
                 except Exception:
                     pass
                 time.sleep(1.5)
@@ -217,6 +221,7 @@ def send_to_contact(page, name: str, msg_text: str, dry_run: bool) -> tuple[bool
         switched = verify_in_conversation(page, name)
 
     if not switched:
+        _screenshot(page)
         return False, "未能切换到该好友会话（名字不在聊天列表，或页面结构变化）"
 
     if detect_rate_limit(page):
@@ -666,11 +671,13 @@ def run_send(
                     "--disable-setuid-sandbox",
                     "--disable-dev-shm-usage",
                     "--disable-gpu",
+                    "--disable-blink-features=AutomationControlled",
                 ],
             )
             context = browser.new_context(
                 storage_state=str(STATE_PATH),
                 viewport={"width": 1366, "height": 768},
+                user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
             )
             page = context.new_page()
 
@@ -687,13 +694,27 @@ def run_send(
                 result["failed"].append({"name": "_system", "reason": "无法打开抖音私信页面"})
                 return result
 
-            time.sleep(8)
+            time.sleep(5)
             logged, why = check_login(page)
             if not logged:
                 result["logged_out"] = True
                 result["failed"].append({"name": "_system", "reason": why})
                 _screenshot(page)
                 return result
+
+            # 关键：等待左侧会话列表渲染完成，未渲染时自动刷新重试
+            for attempt in range(3):
+                try:
+                    page.wait_for_selector(".conversationConversationItemtitle", timeout=30000)
+                    break
+                except Exception:
+                    logger.info("发送前等待联系人列表超时，刷新重试第 %s 次", attempt + 1)
+                    try:
+                        page.reload(wait_until="domcontentloaded", timeout=90000)
+                        page.wait_for_timeout(8000)
+                    except Exception:
+                        pass
+            time.sleep(2)
 
             if not targets:
                 logger.info("未配置任何好友，跳过发送")
