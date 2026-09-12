@@ -341,6 +341,7 @@ def fetch_liked_videos(limit: int = 20) -> dict:
                 viewport={"width": 1366, "height": 768},
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
             )
+            context.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
             page = context.new_page()
             page.goto(LIKES_URL, timeout=90000, wait_until="domcontentloaded")
             page.wait_for_timeout(10000)
@@ -406,6 +407,7 @@ def fetch_chat_contacts() -> dict:
                 viewport={"width": 1366, "height": 768},
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
             )
+            context.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
             page = context.new_page()
 
             goto_ok = False
@@ -424,6 +426,7 @@ def fetch_chat_contacts() -> dict:
             page.wait_for_timeout(8000)
             logged, why = check_login(page)
             if not logged:
+                _screenshot(page)
                 result["error"] = why
                 return result
 
@@ -443,7 +446,12 @@ def fetch_chat_contacts() -> dict:
                         pass
 
             if not list_ready:
-                result["error"] = "等待联系人列表超时（页面未正常渲染会话列表）"
+                _screenshot(page)
+                rl = detect_rate_limit(page)
+                if rl:
+                    result["error"] = f"触发了安全风控拦截（{rl}），页面未正常渲染会话列表"
+                else:
+                    result["error"] = "等待联系人列表超时（页面未渲染会话列表，可能出现滑块验证码、网络卡顿或登录态已失效）"
                 return result
 
             # 稍微等待首屏卡片渲染完全
@@ -668,6 +676,7 @@ def run_send(
                 viewport={"width": 1366, "height": 768},
                 user_agent="Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/128.0.0.0 Safari/537.36",
             )
+            context.add_init_script("Object.defineProperty(navigator, 'webdriver', {get: () => undefined})")
             page = context.new_page()
 
             goto_ok = False

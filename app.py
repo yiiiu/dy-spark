@@ -215,6 +215,15 @@ def health() -> dict:
     return {"ok": True}
 
 
+@app.get("/api/screenshot")
+def api_screenshot(token: str = Header(default="", alias="X-Auth-Token")) -> FileResponse:
+    _check_auth(token)
+    p = DATA_DIR / "last_error.png"
+    if not p.exists():
+        raise HTTPException(status_code=404, detail="暂无错误截图")
+    return FileResponse(p, media_type="image/png")
+
+
 @app.get("/api/status")
 def api_status(token: str = Header(default="", alias="X-Auth-Token")) -> dict:
     _check_auth(token)
