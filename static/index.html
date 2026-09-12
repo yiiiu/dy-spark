@@ -381,14 +381,16 @@
       width: 22px;
       height: 22px;
       fill: url(#flameGrad);
-      stroke: none;
       filter: drop-shadow(0 2px 5px rgba(255, 59, 92, 0.4));
+      vertical-align: middle;
+      flex-shrink: 0;
     }
     .icon-flame-badge {
-      width: 13px;
-      height: 13px;
+      width: 14px;
+      height: 14px;
       fill: url(#flameGrad);
-      stroke: none;
+      vertical-align: middle;
+      flex-shrink: 0;
     }
 
     /* Element Plus 局部样式微调适配暗色 */
@@ -414,12 +416,12 @@
 </head>
 <body>
 
-<!-- 全局 SVG 矢量渐变池 -->
-<svg style="display:none;">
+<!-- 全局 SVG 矢量渐变池 (采用安全隐藏模式，防止 display:none 导致渐变失效) -->
+<svg width="0" height="0" style="position:absolute; width:0; height:0; overflow:hidden; pointer-events:none;" aria-hidden="true">
   <defs>
     <linearGradient id="flameGrad" x1="0%" y1="100%" x2="0%" y2="0%">
       <stop offset="0%" stop-color="#FF3B5C" />
-      <stop offset="60%" stop-color="#FF7A00" />
+      <stop offset="55%" stop-color="#FF7A00" />
       <stop offset="100%" stop-color="#FFC107" />
     </linearGradient>
   </defs>
@@ -431,7 +433,7 @@
     <div class="header-inner">
       <div class="brand-group">
         <svg class="icon-flame-brand" viewBox="0 0 24 24">
-          <path d="M12 2c-.5 2.5-3 4.5-3 7 0 2 1.5 3.5 1.5 5 0 2.5-2 4.5-4.5 4.5C3.5 18.5 2 16 2 13c0-4 4-8 4-8s-1 3 1 5c1.5-1.5 2-4 2-6 0-1.5-.5-3-.5-3s2 1 3.5 2.5C13.5 4.5 14 6 14 7.5c0 1.5-1 2.5-1 4 0 2 2 3.5 4.5 3.5 3 0 5.5-2.5 5.5-6 0-5-5-9-11-7z" />
+          <path fill="url(#flameGrad)" d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" />
         </svg>
         <span class="brand-title">抖音续火花助手</span>
         <span style="display:inline-flex; align-items:center; gap:6px; background:var(--bg-panel-sub); border:1px solid var(--border-color); padding:3px 10px; border-radius:12px; font-size:12px; font-weight:600;">
@@ -626,7 +628,7 @@
                     获取最新好友列表
                   </el-button>
                   <el-button v-if="contacts.length" size="small" @click="selectAllSparkFriends" style="display:inline-flex; align-items:center; gap:4px;">
-                    <svg class="icon-flame-badge" viewBox="0 0 24 24"><path d="M12 2c-.5 2.5-3 4.5-3 7 0 2 1.5 3.5 1.5 5 0 2.5-2 4.5-4.5 4.5C3.5 18.5 2 16 2 13c0-4 4-8 4-8s-1 3 1 5c1.5-1.5 2-4 2-6 0-1.5-.5-3-.5-3s2 1 3.5 2.5C13.5 4.5 14 6 14 7.5c0 1.5-1 2.5-1 4 0 2 2 3.5 4.5 3.5 3 0 5.5-2.5 5.5-6 0-5-5-9-11-7z" /></svg>
+                    <svg class="icon-flame-badge" viewBox="0 0 24 24"><path fill="url(#flameGrad)" d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" /></svg>
                     一键勾选火花好友
                   </el-button>
                   <el-button v-if="contacts.length" size="small" @click="clearAllSelection">清空勾选</el-button>
@@ -652,7 +654,7 @@
                   </div>
                   <div v-if="isSparkFriend(c)" style="flex-shrink:0;">
                     <span class="spark-tag">
-                      <svg class="icon-flame-badge" viewBox="0 0 24 24"><path d="M12 2c-.5 2.5-3 4.5-3 7 0 2 1.5 3.5 1.5 5 0 2.5-2 4.5-4.5 4.5C3.5 18.5 2 16 2 13c0-4 4-8 4-8s-1 3 1 5c1.5-1.5 2-4 2-6 0-1.5-.5-3-.5-3s2 1 3.5 2.5C13.5 4.5 14 6 14 7.5c0 1.5-1 2.5-1 4 0 2 2 3.5 4.5 3.5 3 0 5.5-2.5 5.5-6 0-5-5-9-11-7z" /></svg>
+                      <svg class="icon-flame-badge" viewBox="0 0 24 24"><path fill="url(#flameGrad)" d="M8.5 14.5A2.5 2.5 0 0 0 11 12c0-1.38-.5-2-1-3-1.072-2.143-.224-4.054 2-6 .5 2.5 2 4.9 4 6.5 2 1.6 3 3.5 3 5.5a7 7 0 1 1-14 0c0-1.153.433-2.294 1-3a2.5 2.5 0 0 0 2.5 2.5z" /></svg>
                       {{ getSparkStreakText(c) }}
                     </span>
                   </div>
